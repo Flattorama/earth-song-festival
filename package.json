@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://Flattorama.github.io/earth-song-festival",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
