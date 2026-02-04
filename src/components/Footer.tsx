@@ -37,14 +37,17 @@ const Footer = () => {
             <h4 className="font-serif text-lg font-semibold mb-4 text-gold">Quick Links</h4>
             <nav className="flex flex-col gap-3">
               {[
-                { href: "#about", label: "The Gathering" },
+                { href: "#gathering", label: "The Gathering" },
                 { href: "#expect", label: "What to Expect" },
                 { href: "#tickets", label: "Tickets" },
+                { href: "#facilitators", label: "Facilitators" },
+                { href: "#volunteer", label: "Volunteer" },
                 { href: "#faq", label: "FAQ" },
               ].map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
+                  data-testid={`link-footer-${link.href.replace('#', '')}`}
                   onClick={(e) => {
                     e.preventDefault();
                     handleNavClick(link.href);
@@ -66,6 +69,7 @@ const Footer = () => {
             <div className="flex gap-4">
               <a
                 href="#"
+                data-testid="link-social-instagram"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Instagram"
               >
@@ -73,6 +77,7 @@ const Footer = () => {
               </a>
               <a
                 href="#"
+                data-testid="link-social-facebook"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Facebook"
               >
@@ -80,6 +85,7 @@ const Footer = () => {
               </a>
               <a
                 href="mailto:hello@earthsongfestival.com"
+                data-testid="link-social-email"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Email"
               >
@@ -95,8 +101,8 @@ const Footer = () => {
             © {currentYear} Earth Song Festival Retreat. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-secondary-foreground/50">
-            <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
+            <a href="#" data-testid="link-privacy" className="hover:text-gold transition-colors">Privacy Policy</a>
+            <a href="#" data-testid="link-terms" className="hover:text-gold transition-colors">Terms of Service</a>
           </div>
         </div>
       </div>

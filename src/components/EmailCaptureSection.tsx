@@ -40,6 +40,7 @@ const EmailCaptureSection = () => {
             <Input
               type="text"
               placeholder="First Name"
+              data-testid="input-firstName"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="flex-1 bg-white border-border/50 focus:border-primary h-12 rounded-lg"
@@ -48,6 +49,7 @@ const EmailCaptureSection = () => {
             <Input
               type="email"
               placeholder="Email Address"
+              data-testid="input-email-capture"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 bg-white border-border/50 focus:border-primary h-12 rounded-lg"
@@ -56,7 +58,8 @@ const EmailCaptureSection = () => {
           </div>
           <Button
             type="submit"
-            className="w-full sm:w-auto bg-primary hover:bg-accent text-primary-foreground px-8 h-12 rounded-lg text-base transition-all duration-300"
+            data-testid="button-join-gathering"
+            className="w-full sm:w-auto bg-primary text-primary-foreground px-8 h-12 rounded-lg text-base transition-all duration-300"
           >
             Join the Gathering
           </Button>

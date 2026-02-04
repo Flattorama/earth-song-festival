@@ -98,10 +98,11 @@ const TicketsSection = () => {
                   ))}
                 </ul>
                 <Button
+                  data-testid={`button-ticket-${tier.name.toLowerCase().replace(' ', '-')}`}
                   className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
                     tier.popular
-                      ? "bg-primary hover:bg-accent text-primary-foreground"
-                      : "bg-secondary hover:bg-primary text-secondary-foreground hover:text-primary-foreground"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
                   }`}
                 >
                   {tier.cta}

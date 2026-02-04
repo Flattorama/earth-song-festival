@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/drawer";
 
 const navLinks = [
-  { href: "#about", label: "The Gathering" },
+  { href: "#gathering", label: "The Gathering" },
   { href: "#expect", label: "What to Expect" },
   { href: "#tickets", label: "Tickets" },
+  { href: "#facilitators", label: "Facilitators" },
+  { href: "#volunteer", label: "Volunteer" },
   { href: "#faq", label: "FAQ" },
 ];
 
@@ -54,6 +56,7 @@ const Navigation = () => {
         {/* Logo */}
         <a
           href="#"
+          data-testid="link-logo"
           className={`font-serif text-xl md:text-2xl font-semibold tracking-wide transition-colors ${
             isScrolled ? "text-primary" : "text-primary-foreground"
           }`}
@@ -71,6 +74,7 @@ const Navigation = () => {
             <a
               key={link.href}
               href={link.href}
+              data-testid={`link-nav-${link.href.replace('#', '')}`}
               onClick={(e) => {
                 e.preventDefault();
                 handleNavClick(link.href);
@@ -84,7 +88,8 @@ const Navigation = () => {
           ))}
           <Button
             onClick={() => handleNavClick("#tickets")}
-            className="bg-primary hover:bg-accent text-primary-foreground"
+            data-testid="button-buy-tickets"
+            className="bg-primary text-primary-foreground"
           >
             Buy Tickets
           </Button>
@@ -96,6 +101,7 @@ const Navigation = () => {
             <Button
               variant="ghost"
               size="icon"
+              data-testid="button-menu-open"
               className={isScrolled ? "text-foreground" : "text-primary-foreground"}
             >
               <Menu className="h-6 w-6" />
@@ -109,7 +115,7 @@ const Navigation = () => {
                   EARTH SONG
                 </span>
                 <DrawerClose asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" data-testid="button-menu-close">
                     <X className="h-6 w-6" />
                   </Button>
                 </DrawerClose>
@@ -119,6 +125,7 @@ const Navigation = () => {
                   <a
                     key={link.href}
                     href={link.href}
+                    data-testid={`link-mobile-nav-${link.href.replace('#', '')}`}
                     onClick={(e) => {
                       e.preventDefault();
                       handleNavClick(link.href);
@@ -130,7 +137,8 @@ const Navigation = () => {
                 ))}
                 <Button
                   onClick={() => handleNavClick("#tickets")}
-                  className="mt-4 bg-primary hover:bg-accent text-primary-foreground"
+                  data-testid="button-mobile-buy-tickets"
+                  className="mt-4 bg-primary text-primary-foreground"
                 >
                   Buy Tickets
                 </Button>

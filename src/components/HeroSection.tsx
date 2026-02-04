@@ -55,8 +55,9 @@ const HeroSection = () => {
         <div className="animate-fade-in [animation-delay:0.4s] opacity-0">
           <Button
             onClick={handleScrollToTickets}
+            data-testid="button-secure-spot"
             size="lg"
-            className="bg-primary hover:bg-accent text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+            className="bg-primary text-primary-foreground text-lg px-8 py-6 rounded-full shadow-lg transition-all duration-300"
           >
             Secure Your Spot
           </Button>
