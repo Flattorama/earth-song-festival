@@ -68,3 +68,13 @@ npm run dev
 npm run build
 ```
 Output is generated in the `dist/` directory.
+
+## Deployment
+
+### GitHub Pages
+The project is configured for dual deployment to both Replit and GitHub Pages:
+- **Conditional base path**: Uses `/earth-song-festival/` when deployed via GitHub Actions, `/` for Replit
+- **SPA fallback**: `public/404.html` handles direct URL navigation on GitHub Pages
+- **Homepage**: https://Flattorama.github.io/earth-song-festival
+
+To deploy via GitHub Actions, set `GITHUB_ACTIONS=true` in the build environment.
