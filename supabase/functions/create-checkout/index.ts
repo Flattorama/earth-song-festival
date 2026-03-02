@@ -7,9 +7,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const TICKETS: Record<string, { priceId: string }> = {
-  "early-bird": { priceId: "price_1T6f238aClBcVDVefxCjX29L" },
-  "regular-admission": { priceId: "price_1T6f2N8aClBcVDVeL5a0jxEh" },
+const TICKETS: Record<string, { name: string; description: string; amount: number }> = {
+  "early-bird": {
+    name: "Earth Song — Early Bird Ticket",
+    description:
+      "Full day access (9am–10pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle",
+    amount: 19500, // $195.00 CAD in cents
+  },
+  "regular-admission": {
+    name: "Earth Song — Regular Admission",
+    description:
+      "Full day access (9am–10pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering",
+    amount: 24500, // $245.00 CAD in cents
+  },
 };
 
 serve(async (req) => {
@@ -35,7 +45,19 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:5000";
 
     const session = await stripe.checkout.sessions.create({
-      line_items: [{ price: ticket.priceId, quantity: 1 }],
+      line_items: [
+        {
+          price_data: {
+            currency: "cad",
+            product_data: {
+              name: ticket.name,
+              description: ticket.description,
+            },
+            unit_amount: ticket.amount,
+          },
+          quantity: 1,
+        },
+      ],
       mode: "payment",
       success_url: `${origin}/payment-success`,
       cancel_url: `${origin}/#tickets`,
