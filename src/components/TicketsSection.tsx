@@ -1,6 +1,9 @@
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const ticketTiers = [
   {
@@ -18,6 +21,7 @@ const ticketTiers = [
     ],
     popular: true,
     cta: "Reserve Early Bird",
+    ticketType: "early-bird",
   },
   {
     name: "Regular Admission",
@@ -33,10 +37,32 @@ const ticketTiers = [
     ],
     popular: false,
     cta: "Get Tickets",
+    ticketType: "regular-admission",
   },
 ];
 
 const TicketsSection = () => {
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+  const handleCheckout = async (ticketType: string) => {
+    setLoadingTier(ticketType);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { ticketType },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast.error("Unable to start checkout. Please try again.");
+    } finally {
+      setLoadingTier(null);
+    }
+  };
+
   return (
     <section id="tickets" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4">
@@ -99,13 +125,19 @@ const TicketsSection = () => {
                 </ul>
                 <Button
                   data-testid={`button-ticket-${tier.name.toLowerCase().replace(' ', '-')}`}
+                  onClick={() => handleCheckout(tier.ticketType)}
+                  disabled={loadingTier !== null}
                   className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
                     tier.popular
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  {tier.cta}
+                  {loadingTier === tier.ticketType ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    tier.cta
+                  )}
                 </Button>
               </CardContent>
             </Card>
