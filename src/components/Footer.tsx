@@ -27,7 +27,7 @@ const Footer = () => {
               A ceremonial gathering to dance, heal, and celebrate the sacred rhythms of life.
             </p>
             <div className="text-secondary-foreground/70 space-y-1 text-sm">
-              <p>August 8, 2026</p>
+              <p>August 7-9, 2026</p>
               <p>Still Life Retreat & Lake</p>
             </div>
           </div>
