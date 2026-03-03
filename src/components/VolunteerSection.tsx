@@ -1,60 +1,46 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 import { Clock } from "lucide-react";
 
-const volunteerFormSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  aboutYou: z.string().min(20, "Please tell us a bit more about yourself"),
-  availability: z.string().min(10, "Please describe your availability"),
-  experience: z.string().optional(),
-  whyEarthSong: z.string().min(20, "Please share what calls you to this gathering"),
-});
+const MailerLiteVolunteerForm = () => {
+  useEffect(() => {
+    const s = document.createElement("script");
+    s.src = "https://groot.mailerlite.com/js/w/webforms.min.js?v95037e5bac78f29ed026832ca21a7c7b";
+    s.async = true;
+    document.body.appendChild(s);
+    return () => { try { document.body.removeChild(s); } catch(e) {} };
+  }, []);
 
-type VolunteerFormValues = z.infer<typeof volunteerFormSchema>;
+  const inputStyle = {width:'100%',padding:'10px',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'8px',color:'#fff',fontSize:'14px',boxSizing:'border-box' as const,marginBottom:'10px'};
+  const labelStyle = {color:'rgba(255,255,255,0.85)',fontSize:'13px',fontWeight:'bold' as const,display:'block' as const,marginBottom:'4px'};
+
+  return (
+    <div className="bg-secondary-foreground/5 rounded-2xl p-6 md:p-8">
+      <div id="mlb2-37902242" className="ml-form-embedContainer ml-subscribe-form ml-subscribe-form-37902242">
+        <div className="ml-form-align-center">
+          <div style={{backgroundColor:'transparent',width:'100%'}}>
+            <form className="ml-block-form" action="https://assets.mailerlite.com/jsonp/2143726/forms/180874923059709145/subscribe" method="post" target="_blank">
+              <div><label style={labelStyle}>Full Name *</label><input type="text" name="fields[name]" placeholder="Your full name" required style={inputStyle} /></div>
+              <div><label style={labelStyle}>Email Address *</label><input type="email" name="fields[email]" placeholder="your@email.com" required autoComplete="email" style={inputStyle} /></div>
+              <div><label style={labelStyle}>Phone Number *</label><input type="tel" name="fields[phone]" placeholder="Your phone number" required style={inputStyle} /></div>
+              <div><label style={labelStyle}>Tell us about yourself *</label><textarea name="fields[about]" placeholder="Share a bit about who you are, your background, and what draws you to this work..." required style={{...inputStyle,minHeight:'80px'}} /></div>
+              <div><label style={labelStyle}>Availability *</label><textarea name="fields[availability]" placeholder="Are you available August 7-9, 2026? Any dates you cannot attend?" required style={{...inputStyle,minHeight:'60px'}} /></div>
+              <div><label style={labelStyle}>Relevant Experience</label><textarea name="fields[experience]" placeholder="Have you volunteered at festivals, retreats, or similar events before? Tell us about it..." style={{...inputStyle,minHeight:'60px'}} /></div>
+              <div><label style={labelStyle}>Why Earth Song? *</label><textarea name="fields[why]" placeholder="What calls you to be part of this gathering?" required style={{...inputStyle,minHeight:'60px'}} /></div>
+              <input type="hidden" name="ml-submit" value="1" />
+              <div style={{marginTop:'16px'}}><button type="submit" style={{backgroundColor:'#D4A853',color:'#1C2B1F',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'700',padding:'14px',width:'100%',cursor:'pointer'}}>Submit Application</button></div>
+              <input type="hidden" name="anticsrf" value="true" />
+            </form>
+          </div>
+        </div>
+      </div>
+      <p className="text-secondary-foreground/60 text-sm text-center mt-4">
+        We'll review applications on a rolling basis and be in touch within 2 weeks.
+      </p>
+    </div>
+  );
+};
 
 const VolunteerSection = () => {
-  const { toast } = useToast();
-
-  const form = useForm<VolunteerFormValues>({
-    resolver: zodResolver(volunteerFormSchema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      phone: "",
-      aboutYou: "",
-      availability: "",
-      experience: "",
-      whyEarthSong: "",
-    },
-  });
-
-  const onSubmit = async (data: VolunteerFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Volunteer application submitted:", data);
-
-    toast({
-      title: "Application Received!",
-      description: "Thank you for your application! We've received it and will be in touch soon.",
-    });
-
-    form.reset();
-  };
-
   return (
     <section id="volunteer" className="py-20 md:py-28 bg-secondary text-secondary-foreground">
       <div className="container mx-auto px-4">
@@ -80,164 +66,11 @@ const VolunteerSection = () => {
 
             <div className="inline-flex items-center gap-2 bg-gold/20 text-gold px-4 py-2 rounded-full text-sm font-medium">
               <Clock className="w-4 h-4" />
-              Applications close March 1, 2026
+              Applications close June 30, 2026
             </div>
           </div>
 
-          <div className="bg-secondary-foreground/5 rounded-2xl p-6 md:p-8">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-secondary-foreground">Full Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          data-testid="input-fullName"
-                          placeholder="Your full name"
-                          className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-secondary-foreground">Email Address *</FormLabel>
-                        <FormControl>
-                          <Input
-                            data-testid="input-email"
-                            type="email"
-                            placeholder="your@email.com"
-                            className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-secondary-foreground">Phone Number *</FormLabel>
-                        <FormControl>
-                          <Input
-                            data-testid="input-phone"
-                            type="tel"
-                            placeholder="Your phone number"
-                            className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="aboutYou"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-secondary-foreground">Tell us about yourself *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          data-testid="input-aboutYou"
-                          placeholder="Share a bit about who you are, your background, and what draws you to this work..."
-                          className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50 min-h-[100px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="availability"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-secondary-foreground">Availability *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          data-testid="input-availability"
-                          placeholder="Are you available August 7-9, 2026? Any dates you cannot attend?"
-                          className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="experience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-secondary-foreground">Relevant Experience</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          data-testid="input-experience"
-                          placeholder="Have you volunteered at festivals, retreats, or similar events before? Tell us about it..."
-                          className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="whyEarthSong"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-secondary-foreground">Why Earth Song? *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          data-testid="input-whyEarthSong"
-                          placeholder="What calls you to be part of this gathering?"
-                          className="bg-secondary-foreground/10 border-secondary-foreground/20 text-secondary-foreground placeholder:text-secondary-foreground/50"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  data-testid="button-submit-volunteer"
-                  disabled={form.formState.isSubmitting}
-                  className="w-full bg-gold text-foreground font-medium py-6"
-                >
-                  {form.formState.isSubmitting ? "Submitting..." : "Submit Application"}
-                </Button>
-
-                <p className="text-secondary-foreground/60 text-sm text-center">
-                  We'll review applications on a rolling basis and be in touch within 2 weeks.
-                </p>
-              </form>
-            </Form>
-          </div>
+          <MailerLiteVolunteerForm />
         </div>
       </div>
     </section>

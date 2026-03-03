@@ -43,7 +43,7 @@ const HeroSection = () => {
 
         {/* Date & Location */}
         <p className="text-lg md:text-xl mb-4 animate-fade-in [animation-delay:0.2s] opacity-0">
-          August 8, 2026 <span className="mx-3 text-gold">|</span> Still Life Retreat & Lake
+          August 7-9, 2026 <span className="mx-3 text-gold">|</span> Still Life Retreat & Lake
         </p>
 
         {/* Tagline */}
