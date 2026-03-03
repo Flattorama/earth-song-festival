@@ -12,13 +12,13 @@ const TICKETS: Record<string, { name: string; description: string; amount: numbe
     name: "Earth Song — Early Bird Ticket",
     description:
       "Full day access (9am–10pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle",
-    amount: 19500, // $195.00 CAD in cents
+    amount: 30000, // $300.00 CAD in cents
   },
   "regular-admission": {
     name: "Earth Song — Regular Admission",
     description:
       "Full day access (9am–10pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering",
-    amount: 24500, // $245.00 CAD in cents
+    amount: 33300, // $333.00 CAD in cents
   },
 };
 

@@ -8,8 +8,8 @@ import { toast } from "sonner";
 const ticketTiers = [
   {
     name: "Early Bird",
-    price: "CA$195",
-    originalPrice: "CA$245",
+    price: "CA$300",
+    originalPrice: "CA$333",
     description: "Limited availability – secure your spot at a special rate",
     features: [
       "Full day access (9am – 10pm)",
@@ -25,7 +25,7 @@ const ticketTiers = [
   },
   {
     name: "Regular Admission",
-    price: "CA$245",
+    price: "CA$333",
     originalPrice: null,
     description: "Standard admission to the full Earth Song experience",
     features: [
