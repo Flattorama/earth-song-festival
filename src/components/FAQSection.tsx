@@ -7,16 +7,16 @@ import {
 
 const faqItems = [
   {
-    question: "What time does the day begin and end?",
-    answer: "Gates open at 9:00 AM for arrival and settling in. Opening ceremony begins at 10:00 AM. The day concludes with closing ceremony around 9:00 PM. We encourage you to arrive early and stay for the full experience.",
+    question: "What time does the weekend begin and end?",
+    answer: "Gates open Friday at 2:00 PM for arrival and settling in. Opening ceremony begins Friday evening. The weekend concludes with closing ceremony Sunday around 3:00 PM. We encourage you to arrive early and stay for the full experience.",
   },
   {
     question: "What's included in my ticket?",
-    answer: "Your ticket includes full access to all workshops, ceremonies, and performances throughout the day. It also includes breakfast, lunch, and dinner prepared with love by our food team. Basically—everything except getting yourself there!",
+    answer: "Your ticket includes full access to all workshops, ceremonies, and performances throughout the weekend. It also includes meals prepared with love by our food team. Basically—everything except getting yourself there!",
   },
   {
     question: "Is camping available?",
-    answer: "Earth Song is a single-day gathering, so camping is not included. However, Still Life Retreat & Lake offers on-site accommodation options, and there are additional lodging options nearby. Details will be sent to ticket holders closer to the event.",
+    answer: "Earth Song is a weekend gathering with on-site camping included. Still Life Retreat & Lake also offers accommodation options for those who prefer more comfort. Details will be sent to ticket holders closer to the event.",
   },
   {
     question: "What should I bring?",
@@ -28,7 +28,7 @@ const faqItems = [
   },
   {
     question: 'What does "Leave No Trace" mean?',
-    answer: "We are guests on this beautiful land and committed to leaving it better than we found it. This means packing out what you pack in, respecting the environment, and participating in our collective clean-up at the end of the day.",
+    answer: "We are guests on this beautiful land and committed to leaving it better than we found it. This means packing out what you pack in, respecting the environment, and participating in our collective clean-up at the end of the weekend.",
   },
   {
     question: "Is this event accessible?",

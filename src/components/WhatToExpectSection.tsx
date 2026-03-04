@@ -46,7 +46,7 @@ const WhatToExpectSection = () => {
             What to Expect
           </h2>
           <p className="text-secondary-foreground/80 text-lg max-w-2xl mx-auto">
-            A day of transformation, connection, and celebration. Here's what awaits you.
+            A weekend of transformation, connection, and celebration. Here's what awaits you.
           </p>
         </div>
 
