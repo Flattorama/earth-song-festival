@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const ticketTiers = [
   {
     name: "Early Bird",
-    price: "CA$300",
+    price: "CA$299",
     originalPrice: "CA$333",
     description: "Limited availability – secure your spot at a special rate",
     features: [
@@ -38,6 +38,21 @@ const ticketTiers = [
     popular: false,
     cta: "Get Tickets",
     ticketType: "regular-admission",
+  },
+  {
+    name: "Saturday Day Pass",
+    price: "CA$150",
+    originalPrice: null,
+    description: "A one-day pass for Saturday only",
+    features: [
+      "Saturday access (9am–10pm)",
+      "All Saturday ceremonies & workshops",
+      "Live music & performances",
+      "Organic meals & refreshments",
+    ],
+    popular: false,
+    cta: "Get Day Pass",
+    ticketType: "saturday-day-pass",
   },
 ];
 
@@ -81,7 +96,7 @@ const TicketsSection = () => {
         </div>
 
         {/* Ticket Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
           {ticketTiers.map((tier, index) => (
             <Card
               key={index}
