@@ -12,7 +12,7 @@ const ticketTiers = [
     originalPrice: "CA$333",
     description: "Limited availability – secure your spot at a special rate",
     features: [
-      "Full day access (9am – 10pm)",
+      "Full weekend access (Fri–Sun)",
       "All ceremonies & workshops",
       "Live music & performances",
       "Organic meals & refreshments",
@@ -29,7 +29,7 @@ const ticketTiers = [
     originalPrice: null,
     description: "Standard admission to the full Earth Song experience",
     features: [
-      "Full day access (9am – 10pm)",
+      "Full weekend access (Fri–Sun)",
       "All ceremonies & workshops",
       "Live music & performances",
       "Organic meals & refreshments",

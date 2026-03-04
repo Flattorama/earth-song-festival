@@ -25,7 +25,7 @@ const facilitators = [
   {
     name: "To Be Announced",
     role: "Musical Performer",
-    bio: "Soulful musicians will create the soundscape for our day—from gentle morning melodies to firelit evening songs. Stay tuned for performer announcements.",
+    bio: "Soulful musicians will create the soundscape for our weekend—from gentle morning melodies to firelit evening songs. Stay tuned for performer announcements.",
     image: "",
     initials: "TBA",
   },

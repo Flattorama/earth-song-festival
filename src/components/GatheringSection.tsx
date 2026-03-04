@@ -10,17 +10,17 @@ const GatheringSection = () => {
               THE GATHERING
             </p>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold mb-6 text-foreground">
-              A Day to Remember Who You Are
+              A Weekend to Remember That Good Exists
             </h2>
             <div className="space-y-4 text-foreground/80 leading-relaxed">
               <p>
-                Earth Song is a one-day festival retreat for those who feel the call to gather in nature, move with intention, and reconnect with the rhythms of the land.
+                Earth Song is a weekend festival retreat for those who feel the call to gather in nature, move with intention, and reconnect with the rhythms of the land.
               </p>
               <p>
-                Hosted at the breathtaking Still Life Retreat & Lake, in collaboration with Happy Rock Holistics, this gathering weaves together live music, embodied workshops, fire ceremony, nourishing food, and the simple magic of being together under open sky.
+                Hosted at the breathtaking Still Life Retreat & Lake, in collaboration with Happy Rock Holistics, this weekend gathering weaves together live music, embodied workshops, fire ceremony, nourishing food, and the simple magic of being together under open sky.
               </p>
               <p className="font-serif text-lg italic text-accent">
-                This is not a party. It is a homecoming.
+                This is not a party. It is a homecoming—a weekend to celebrate this existence.
               </p>
               <p>
                 We come together to slow down, to listen, to celebrate the earth and each other. Whether you arrive alone or with loved ones, you will leave feeling held by something greater—a community of kindred spirits who believe that gathering in sacred space has the power to heal.
