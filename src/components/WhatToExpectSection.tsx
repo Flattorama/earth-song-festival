@@ -9,7 +9,7 @@ const features = [
   {
     icon: Music,
     title: "Live Music & Performance",
-    description: "Soul-stirring performances from world-class musicians and artists.",
+    description: "Soul-stirring performances from intentional musicians and artists.",
   },
   {
     icon: Heart,
@@ -19,7 +19,7 @@ const features = [
   {
     icon: Users,
     title: "Fire Circle Gathering",
-    description: "An evening of storytelling, song, and community around the sacred fire.",
+    description: "An evening of fire songs, drumming, storytelling, and community around the sacred fire.",
   },
   {
     icon: Utensils,
