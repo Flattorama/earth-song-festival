@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { Instagram, Facebook, Mail } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import WaiverContent from "./WaiverContent";
 
 const Footer = () => {
+  const [waiverOpen, setWaiverOpen] = useState(false);
   const currentYear = new Date().getFullYear();
 
   const handleNavClick = (href: string) => {
@@ -103,9 +114,33 @@ const Footer = () => {
           <div className="flex gap-6 text-sm text-secondary-foreground/50">
             <a href="#" data-testid="link-privacy" className="hover:text-gold transition-colors">Privacy Policy</a>
             <a href="#" data-testid="link-terms" className="hover:text-gold transition-colors">Terms of Service</a>
+            <button
+              onClick={() => setWaiverOpen(true)}
+              className="hover:text-gold transition-colors"
+            >
+              Liability Waiver
+            </button>
           </div>
         </div>
       </div>
+
+      <Dialog open={waiverOpen} onOpenChange={setWaiverOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle className="font-serif text-xl text-primary">
+              Liability Waiver
+            </DialogTitle>
+            <DialogDescription>
+              Release of Liability, Waiver of Claims, Assumption of Risk &
+              Indemnity Agreement for the Earth Song Festival Retreat.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 px-6 pb-6 max-h-[65vh]">
+            <WaiverContent />
+            <div className="h-4" />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </footer>
   );
 };

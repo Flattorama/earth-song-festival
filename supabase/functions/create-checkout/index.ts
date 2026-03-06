@@ -34,7 +34,7 @@ serve(async (req) => {
   }
 
   try {
-    const { ticketType } = await req.json();
+    const { ticketType, customerEmail, customerName } = await req.json();
 
     const ticket = TICKETS[ticketType];
     if (!ticket) {
@@ -50,7 +50,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:5000";
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Record<string, unknown> = {
       line_items: [
         {
           price_data: {
@@ -67,7 +67,17 @@ serve(async (req) => {
       mode: "payment",
       success_url: `${origin}/payment-success`,
       cancel_url: `${origin}/#tickets`,
-    });
+      metadata: {
+        ticket_type: ticketType,
+        attendee_name: customerName || "",
+      },
+    };
+
+    if (customerEmail) {
+      sessionParams.customer_email = customerEmail;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

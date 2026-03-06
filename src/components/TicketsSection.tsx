@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import WaiverDialog from "./WaiverDialog";
 
 const ticketTiers = [
   {
@@ -57,31 +56,20 @@ const ticketTiers = [
 ];
 
 const TicketsSection = () => {
-  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [waiverOpen, setWaiverOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<{
+    type: string;
+    label: string;
+  } | null>(null);
 
-  const handleCheckout = async (ticketType: string) => {
-    setLoadingTier(ticketType);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { ticketType },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
-    } catch (err: any) {
-      console.error("Checkout error:", err);
-      toast.error("Unable to start checkout. Please try again.");
-    } finally {
-      setLoadingTier(null);
-    }
+  const handleTicketClick = (ticketType: string, ticketLabel: string) => {
+    setSelectedTicket({ type: ticketType, label: ticketLabel });
+    setWaiverOpen(true);
   };
 
   return (
     <section id="tickets" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4">
-        {/* Section Header */}
         <div className="text-center mb-16">
           <p className="text-small-caps text-accent tracking-[0.2em] text-sm mb-4">
             Join Us
@@ -90,12 +78,11 @@ const TicketsSection = () => {
             Secure Your Place
           </h2>
           <p className="text-foreground/80 text-lg max-w-2xl mx-auto">
-            Space is intentionally limited to preserve the intimacy of our gathering. 
+            Space is intentionally limited to preserve the intimacy of our gathering.
             Early registration is encouraged.
           </p>
         </div>
 
-        {/* Ticket Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
           {ticketTiers.map((tier, index) => (
             <Card
@@ -140,29 +127,23 @@ const TicketsSection = () => {
                 </ul>
                 <Button
                   data-testid={`button-ticket-${tier.name.toLowerCase().replace(' ', '-')}`}
-                  onClick={() => handleCheckout(tier.ticketType)}
-                  disabled={loadingTier !== null}
+                  onClick={() => handleTicketClick(tier.ticketType, tier.name)}
                   className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
                     tier.popular
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  {loadingTier === tier.ticketType ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    tier.cta
-                  )}
+                  {tier.cta}
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Additional Info */}
         <div className="text-center mt-12 space-y-2">
           <p className="text-muted-foreground">
-            <span className="font-semibold text-foreground">Limited to 150 souls</span> — 
+            <span className="font-semibold text-foreground">Limited to 150 souls</span> —
             First come, first served
           </p>
           <p className="text-muted-foreground text-sm">
@@ -170,6 +151,15 @@ const TicketsSection = () => {
           </p>
         </div>
       </div>
+
+      {selectedTicket && (
+        <WaiverDialog
+          open={waiverOpen}
+          onOpenChange={setWaiverOpen}
+          ticketType={selectedTicket.type}
+          ticketLabel={selectedTicket.label}
+        />
+      )}
     </section>
   );
 };
