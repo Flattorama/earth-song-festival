@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WaiverDialogProps {
   open: boolean;
@@ -41,46 +42,26 @@ const WaiverDialog = ({
     if (!canSubmit) return;
     setLoading(true);
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !anonKey) {
-      toast.error("Configuration error. Please contact support.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const res = await fetch(
-        `${supabaseUrl}/functions/v1/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${anonKey}`,
-            apikey: anonKey,
-          },
-          body: JSON.stringify({
-            ticketType,
-            customerEmail: email.trim(),
-            customerName: name.trim(),
-            customerPhone: phone.trim(),
-            customerAddress: address.trim(),
-          }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          ticketType,
+          customerEmail: email.trim(),
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          customerAddress: address.trim(),
+        },
+      });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result?.error || `Server error (${res.status})`);
+      if (error) {
+        throw new Error(error.message || "Request failed");
       }
 
-      if (!result?.url) {
+      if (!data?.url) {
         throw new Error("No checkout URL returned");
       }
 
-      window.location.href = result.url;
+      window.location.href = data.url;
     } catch (err: unknown) {
       console.error("Waiver/checkout error:", err);
       const message =
