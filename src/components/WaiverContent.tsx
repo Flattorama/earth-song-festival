@@ -19,6 +19,17 @@ const WaiverContent = () => {
         </p>
       </div>
 
+      <a
+        href="/Earth_Song_Waiver_Printable.pdf"
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
+      >
+        <Download className="h-4 w-4" />
+        Download printable waiver (PDF)
+      </a>
+
       <hr className="border-border" />
 
       <p>
@@ -224,18 +235,6 @@ const WaiverContent = () => {
         </p>
       </div>
 
-      <hr className="border-border" />
-
-      <a
-        href="/Earth_Song_Waiver_Printable.pdf"
-        download
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
-      >
-        <Download className="h-4 w-4" />
-        Download printable waiver (PDF)
-      </a>
     </div>
   );
 };
