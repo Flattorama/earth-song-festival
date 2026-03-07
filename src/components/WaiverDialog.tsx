@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
 
@@ -42,27 +41,47 @@ const WaiverDialog = ({
     if (!canSubmit) return;
     setLoading(true);
 
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !anonKey) {
+      toast.error("Configuration error. Please contact support.");
+      setLoading(false);
+      return;
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${anonKey}`,
+      apikey: anonKey,
+      Prefer: "return=minimal",
+    };
+
     try {
-      const { error: insertError } = await supabase
-        .from("waiver_acceptances")
-        .insert({
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/waiver_acceptances`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
           attendee_name: name.trim(),
           attendee_email: email.trim(),
           attendee_phone: phone.trim(),
           attendee_address: address.trim(),
           ticket_type: ticketType,
           waiver_version: "v1.0_2026-08-07",
-        });
+        }),
+      });
 
-      if (insertError) throw insertError;
+      if (!insertRes.ok) {
+        const errBody = await insertRes.text();
+        throw new Error(`Waiver save failed: ${errBody}`);
+      }
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`;
-      const response = await fetch(apiUrl, {
+      const checkoutRes = await fetch(`${supabaseUrl}/functions/v1/create-checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${anonKey}`,
+          apikey: anonKey,
         },
         body: JSON.stringify({
           ticketType,
@@ -71,11 +90,12 @@ const WaiverDialog = ({
         }),
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result?.error || `Server error (${response.status})`);
+      if (!checkoutRes.ok) {
+        const errText = await checkoutRes.text();
+        throw new Error(`Checkout failed (${checkoutRes.status}): ${errText}`);
       }
+
+      const result = await checkoutRes.json();
 
       if (!result?.url) {
         throw new Error("No checkout URL returned");
