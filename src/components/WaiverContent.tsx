@@ -1,13 +1,17 @@
-import { Download } from "lucide-react";
-
 const WaiverContent = () => {
   return (
     <div className="space-y-6 text-sm text-foreground/80 leading-relaxed">
-      <div className="text-center space-y-1">
-        <h3 className="font-serif text-xl font-semibold text-primary">
+      <a
+        href="/Earth_Song_Waiver_Printable.pdf"
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-center space-y-1 group"
+      >
+        <h3 className="font-serif text-xl font-semibold text-primary group-hover:text-primary/70 underline underline-offset-2 decoration-primary/40 group-hover:decoration-primary/70 transition-colors">
           Release of Liability, Waiver of Claims,
         </h3>
-        <h3 className="font-serif text-xl font-semibold text-primary">
+        <h3 className="font-serif text-xl font-semibold text-primary group-hover:text-primary/70 underline underline-offset-2 decoration-primary/40 group-hover:decoration-primary/70 transition-colors">
           Assumption of Risk & Indemnity Agreement
         </h3>
         <p className="font-serif text-base font-medium text-foreground mt-2">
@@ -17,17 +21,6 @@ const WaiverContent = () => {
         <p className="text-muted-foreground text-xs">
           Still Life Retreat - West Grey, Ontario
         </p>
-      </div>
-
-      <a
-        href="/Earth_Song_Waiver_Printable.pdf"
-        download
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
-      >
-        <Download className="h-4 w-4" />
-        Download printable waiver (PDF)
       </a>
 
       <hr className="border-border" />
