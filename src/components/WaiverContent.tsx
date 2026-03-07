@@ -6,7 +6,11 @@ const WaiverContent = () => {
         download
         target="_blank"
         rel="noopener noreferrer"
-        className="block text-center space-y-1 group"
+        className="block text-center space-y-1 group cursor-pointer"
+        onClick={(e) => {
+          e.preventDefault();
+          window.open("/Earth_Song_Waiver_Printable.pdf", "_blank");
+        }}
       >
         <h3 className="font-serif text-xl font-semibold text-primary group-hover:text-primary/70 underline underline-offset-2 decoration-primary/40 group-hover:decoration-primary/70 transition-colors">
           Release of Liability, Waiver of Claims,
