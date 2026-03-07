@@ -50,52 +50,31 @@ const WaiverDialog = ({
       return;
     }
 
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${anonKey}`,
-      apikey: anonKey,
-      Prefer: "return=minimal",
-    };
-
     try {
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/waiver_acceptances`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          attendee_name: name.trim(),
-          attendee_email: email.trim(),
-          attendee_phone: phone.trim(),
-          attendee_address: address.trim(),
-          ticket_type: ticketType,
-          waiver_version: "v1.0_2026-08-07",
-        }),
-      });
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
+          },
+          body: JSON.stringify({
+            ticketType,
+            customerEmail: email.trim(),
+            customerName: name.trim(),
+            customerPhone: phone.trim(),
+            customerAddress: address.trim(),
+          }),
+        }
+      );
 
-      if (!insertRes.ok) {
-        const errBody = await insertRes.text();
-        throw new Error(`Waiver save failed: ${errBody}`);
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result?.error || `Server error (${res.status})`);
       }
-
-      const checkoutRes = await fetch(`${supabaseUrl}/functions/v1/create-checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${anonKey}`,
-          apikey: anonKey,
-        },
-        body: JSON.stringify({
-          ticketType,
-          customerEmail: email.trim(),
-          customerName: name.trim(),
-        }),
-      });
-
-      if (!checkoutRes.ok) {
-        const errText = await checkoutRes.text();
-        throw new Error(`Checkout failed (${checkoutRes.status}): ${errText}`);
-      }
-
-      const result = await checkoutRes.json();
 
       if (!result?.url) {
         throw new Error("No checkout URL returned");
