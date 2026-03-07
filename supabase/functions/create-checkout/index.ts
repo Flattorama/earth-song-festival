@@ -43,9 +43,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      return new Response(JSON.stringify({ error: "Stripe is not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const stripe = new Stripe(stripeKey);
 
     const origin = req.headers.get("origin") || "http://localhost:5000";
 
@@ -64,7 +70,7 @@ Deno.serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/payment-success`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#tickets`,
       metadata: {
         ticket_type: ticketType,

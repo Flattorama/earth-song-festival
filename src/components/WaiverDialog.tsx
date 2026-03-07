@@ -68,11 +68,11 @@ const WaiverDialog = ({
       );
 
       if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        onOpenChange(false);
-        resetForm();
+      if (!data?.url) {
+        throw new Error(data?.error || "No checkout URL returned");
       }
+
+      window.location.href = data.url;
     } catch (err) {
       console.error("Waiver/checkout error:", err);
       toast.error("Unable to start checkout. Please try again.");
