@@ -56,26 +56,39 @@ const WaiverDialog = ({
 
       if (insertError) throw insertError;
 
-      const { data, error } = await supabase.functions.invoke(
-        "create-checkout",
-        {
-          body: {
-            ticketType,
-            customerEmail: email.trim(),
-            customerName: name.trim(),
-          },
-        }
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          ticketType,
+          customerEmail: email.trim(),
+          customerName: name.trim(),
+        }),
+      });
 
-      if (error) throw error;
-      if (!data?.url) {
-        throw new Error(data?.error || "No checkout URL returned");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.error || `Server error (${response.status})`);
       }
 
-      window.location.href = data.url;
-    } catch (err) {
+      if (!result?.url) {
+        throw new Error("No checkout URL returned");
+      }
+
+      window.location.href = result.url;
+    } catch (err: unknown) {
       console.error("Waiver/checkout error:", err);
-      toast.error("Unable to start checkout. Please try again.");
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? (err as { message: string }).message
+          : "Unknown error";
+      toast.error(`Unable to start checkout: ${message}`);
     } finally {
       setLoading(false);
     }
