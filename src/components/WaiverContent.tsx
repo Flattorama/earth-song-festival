@@ -1,3 +1,5 @@
+import { Download } from "lucide-react";
+
 const WaiverContent = () => {
   return (
     <div className="space-y-6 text-sm text-foreground/80 leading-relaxed">
@@ -221,6 +223,19 @@ const WaiverContent = () => {
           right to bring legal claims.
         </p>
       </div>
+
+      <hr className="border-border" />
+
+      <a
+        href="/Earth_Song_Waiver_Printable.pdf"
+        download
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium text-sm transition-colors"
+      >
+        <Download className="h-4 w-4" />
+        Download printable waiver (PDF)
+      </a>
     </div>
   );
 };
