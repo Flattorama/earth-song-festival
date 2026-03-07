@@ -14,7 +14,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
-import { supabase } from "@/integrations/supabase/client";
+const CHECKOUT_URL =
+  "https://uxsastmtftysfwjgvkzu.supabase.co/functions/v1/create-checkout";
+const ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4c2FzdG10ZnR5c2Z3amd2a3p1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4Mjk2NjcsImV4cCI6MjA4ODQwNTY2N30.UE9NZ-Hh2f3noz12LbbUNiBallPyxEVEhE6FOfvHsWs";
 
 interface WaiverDialogProps {
   open: boolean;
@@ -43,25 +46,33 @@ const WaiverDialog = ({
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
+      const res = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ANON_KEY}`,
+          apikey: ANON_KEY,
+        },
+        body: JSON.stringify({
           ticketType,
           customerEmail: email.trim(),
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerAddress: address.trim(),
-        },
+        }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Request failed");
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result?.error || `Server error (${res.status})`);
       }
 
-      if (!data?.url) {
+      if (!result?.url) {
         throw new Error("No checkout URL returned");
       }
 
-      window.location.href = data.url;
+      window.location.href = result.url;
     } catch (err: unknown) {
       console.error("Waiver/checkout error:", err);
       const message =
