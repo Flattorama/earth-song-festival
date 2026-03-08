@@ -31,8 +31,7 @@ const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleNavClick = (href: string) => {
-    setIsOpen(false);
+  const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
       const offset = 80;
@@ -42,6 +41,15 @@ const Navigation = () => {
         top: offsetPosition,
         behavior: "smooth",
       });
+    }
+  };
+
+  const handleNavClick = (href: string) => {
+    if (isOpen) {
+      setIsOpen(false);
+      setTimeout(() => scrollToSection(href), 350);
+    } else {
+      scrollToSection(href);
     }
   };
 
