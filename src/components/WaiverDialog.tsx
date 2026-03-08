@@ -113,30 +113,30 @@ const WaiverDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle className="font-serif text-xl text-primary">
-            Liability Waiver Agreement
-          </DialogTitle>
-          <DialogDescription>
-            Please read the waiver below, fill in your information, and accept
-            before proceeding to purchase your{" "}
-            <span className="font-medium text-foreground">{ticketLabel}</span>{" "}
-            ticket.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="max-w-2xl max-h-[90vh] overflow-y-auto overscroll-contain p-0 gap-0"
+      >
+        <div className="sticky top-0 z-10 bg-background px-6 pt-6 pb-4 border-b border-border">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl text-primary">
+              Liability Waiver Agreement
+            </DialogTitle>
+            <DialogDescription>
+              Please read the waiver below, fill in your information, and accept
+              before proceeding to purchase your{" "}
+              <span className="font-medium text-foreground">{ticketLabel}</span>{" "}
+              ticket.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="relative flex-1 min-h-0">
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="h-full overflow-y-auto overscroll-contain"
-          >
-          <div className="px-6">
-            <WaiverContent />
-          </div>
+        <div className="px-6 pt-4 pb-2">
+          <WaiverContent />
+        </div>
 
-          <div className="border-t border-border px-6 py-5 space-y-4">
+        <div className="border-t border-border px-6 py-5 space-y-4">
           <h4 className="font-serif text-base font-semibold text-primary">
             Attendee Information
           </h4>
@@ -214,19 +214,17 @@ const WaiverDialog = ({
             )}
           </Button>
         </div>
-          </div>
 
-          {showScrollHint && (
-            <button
-              type="button"
-              onClick={scrollToBottom}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-              Scroll to bottom
-            </button>
-          )}
-        </div>
+        {showScrollHint && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            className="sticky bottom-3 mx-auto flex items-center gap-1.5 px-3 py-1.5 mb-3 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:opacity-90 transition-opacity z-10"
+          >
+            <ChevronDown className="w-3.5 h-3.5" />
+            Scroll to bottom
+          </button>
+        )}
       </DialogContent>
     </Dialog>
   );
