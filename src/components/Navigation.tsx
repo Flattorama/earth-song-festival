@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Instagram, Facebook } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -70,6 +71,24 @@ const Navigation = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
+          <a
+            href="https://www.instagram.com/earthsong_festival_retreat"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className={`transition-colors hover:text-accent ${isScrolled ? "text-foreground" : "text-primary-foreground"}`}
+          >
+            <Instagram className="h-5 w-5" />
+          </a>
+          <a
+            href="https://www.facebook.com/share/1FjAosHBHrDaD"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Facebook"
+            className={`transition-colors hover:text-accent ${isScrolled ? "text-foreground" : "text-primary-foreground"}`}
+          >
+            <Facebook className="h-5 w-5" />
+          </a>
           {navLinks.map((link) => (
             <a
               key={link.href}
@@ -142,6 +161,26 @@ const Navigation = () => {
                 >
                   Buy Tickets
                 </Button>
+                <div className="flex gap-4 mt-6">
+                  <a
+                    href="https://www.instagram.com/earthsong_festival_retreat"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                  <a
+                    href="https://www.facebook.com/share/1FjAosHBHrDaD"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                </div>
               </nav>
             </div>
           </DrawerContent>

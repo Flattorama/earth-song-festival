@@ -12,7 +12,7 @@ const faqItems = [
   },
   {
     question: "What's included in my ticket?",
-    answer: "Your ticket includes full access to all workshops, ceremonies, and performances throughout the weekend. It also includes meals prepared with love by our food team. Basically—everything except getting yourself there!",
+    answer: "Your ticket includes full access to all workshops, ceremonies, and performances throughout the weekend, plus camping, parking, and lake access. Food is not included in the ticket price, but healthy, nourishing meals will be lovingly prepared from local ingredients by Chef Doris and available for purchase on-site. Herbal tea and coffee vendors will also be available — please bring cash for food and vendor purchases. This is an alcohol-free gathering.",
   },
   {
     question: "Is camping available?",
