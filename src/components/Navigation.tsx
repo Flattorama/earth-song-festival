@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Instagram, Facebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Instagram, Facebook } from "lucide-react";
+import earthSongLogo from "@/assets/Earth_Song_Logo_White.png";
 import {
   Drawer,
   DrawerContent,
@@ -58,15 +58,16 @@ const Navigation = () => {
         <a
           href="#"
           data-testid="link-logo"
-          className={`font-serif text-xl md:text-2xl font-semibold tracking-wide transition-colors ${
-            isScrolled ? "text-primary" : "text-primary-foreground"
-          }`}
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         >
-          EARTH SONG
+          <img
+            src={earthSongLogo}
+            alt="Earth Song Festival"
+            className={`h-10 md:h-12 w-auto object-contain transition-opacity ${isScrolled ? "brightness-0" : "brightness-100"}`}
+          />
         </a>
 
         {/* Desktop Navigation */}
@@ -130,9 +131,11 @@ const Navigation = () => {
           <DrawerContent className="h-full w-[280px] ml-auto rounded-none">
             <div className="flex flex-col h-full bg-background p-6">
               <div className="flex justify-between items-center mb-8">
-                <span className="font-serif text-xl font-semibold text-primary">
-                  EARTH SONG
-                </span>
+                <img
+                  src={earthSongLogo}
+                  alt="Earth Song Festival"
+                  className="h-10 w-auto object-contain brightness-0"
+                />
                 <DrawerClose asChild>
                   <Button variant="ghost" size="icon" data-testid="button-menu-close">
                     <X className="h-6 w-6" />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import earthSongLogo from "@/assets/Earth_Song_Logo_White.png";
 import { Instagram, Facebook, Mail } from "lucide-react";
 import {
   Dialog,
@@ -33,7 +34,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
           {/* Brand Column */}
           <div>
-            <h3 className="font-serif text-2xl font-semibold mb-4">EARTH SONG</h3>
+            <img src={earthSongLogo} alt="Earth Song Festival" className="h-14 w-auto object-contain mb-4" />
             <p className="text-secondary-foreground/70 mb-4">
               A ceremonial gathering to dance, heal, and celebrate the sacred rhythms of life.
             </p>
