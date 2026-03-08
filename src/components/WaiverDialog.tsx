@@ -101,7 +101,7 @@ const WaiverDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="font-serif text-xl text-primary">
             Liability Waiver Agreement
           </DialogTitle>
@@ -113,12 +113,12 @@ const WaiverDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6 max-h-[40vh]">
-          <WaiverContent />
-          <div className="h-4" />
-        </ScrollArea>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-6">
+            <WaiverContent />
+          </div>
 
-        <div className="border-t border-border px-6 py-5 space-y-4">
+          <div className="border-t border-border px-6 py-5 space-y-4">
           <h4 className="font-serif text-base font-semibold text-primary">
             Attendee Information
           </h4>
@@ -196,6 +196,7 @@ const WaiverDialog = ({
             )}
           </Button>
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
