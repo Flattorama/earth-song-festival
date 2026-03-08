@@ -1,5 +1,3 @@
-import { createClient } from "npm:@supabase/supabase-js@2.49.4";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -74,13 +72,54 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
   return tokenData.access_token;
 }
 
+async function ensureSheetTab(
+  accessToken: string,
+  spreadsheetId: string,
+  sheetName: string
+): Promise<void> {
+  const metaRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  const meta = await metaRes.json();
+
+  if (meta.error) {
+    throw new Error(`Failed to read spreadsheet metadata: ${JSON.stringify(meta.error)}`);
+  }
+
+  const existingTitles: string[] = (meta.sheets || []).map(
+    (s: { properties: { title: string } }) => s.properties.title
+  );
+
+  if (existingTitles.includes(sheetName)) return;
+
+  const addRes = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        requests: [{ addSheet: { properties: { title: sheetName } } }],
+      }),
+    }
+  );
+
+  if (!addRes.ok) {
+    const err = await addRes.text();
+    throw new Error(`Failed to create sheet tab: ${err}`);
+  }
+}
+
 async function appendToSheet(
   accessToken: string,
   spreadsheetId: string,
   sheetName: string,
   values: string[][]
 ): Promise<void> {
-  const range = `${sheetName}!A1`;
+  const range = `'${sheetName}'!A1`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
 
   const res = await fetch(url, {
@@ -103,7 +142,7 @@ async function ensureHeaders(
   spreadsheetId: string,
   sheetName: string
 ): Promise<void> {
-  const range = `${sheetName}!A1:J1`;
+  const range = `'${sheetName}'!A1:J1`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
 
   const res = await fetch(url, {
@@ -150,6 +189,7 @@ Deno.serve(async (req) => {
     const accessToken = await getGoogleAccessToken(serviceAccountJson);
     const sheetName = "Waiver Acceptances";
 
+    await ensureSheetTab(accessToken, spreadsheetId, sheetName);
     await ensureHeaders(accessToken, spreadsheetId, sheetName);
 
     const row = [
