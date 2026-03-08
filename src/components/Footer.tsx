@@ -96,7 +96,7 @@ const Footer = () => {
                 <Facebook className="w-5 h-5 text-gold" />
               </a>
               <a
-                href="mailto:hello@earthsongfestival.com"
+                href="mailto:info@earthsongfestival.com"
                 data-testid="link-social-email"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Email"

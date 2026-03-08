@@ -1,4 +1,4 @@
-import stillLifeImg from "@/assets/Still_Life_Retreat.png";
+import stillLifeImg from "@/assets/Gemini_Generated_Image_nhnridnhnridnhnr.png";
 import happyRockImg from "@/assets/HappyRockHolisticsLogo.png";
 
 const partners = [
