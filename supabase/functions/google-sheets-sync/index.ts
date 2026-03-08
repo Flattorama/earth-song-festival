@@ -140,9 +140,10 @@ async function appendToSheet(
 async function ensureHeaders(
   accessToken: string,
   spreadsheetId: string,
-  sheetName: string
+  sheetName: string,
+  headers: string[]
 ): Promise<void> {
-  const range = `'${sheetName}'!A1:J1`;
+  const range = `'${sheetName}'!A1:${String.fromCharCode(64 + headers.length)}1`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`;
 
   const res = await fetch(url, {
@@ -153,12 +154,65 @@ async function ensureHeaders(
   const hasHeaders = data.values && data.values.length > 0;
 
   if (!hasHeaders) {
-    const headerRow = [
-      ["ID", "Name", "Email", "Phone", "Address", "Ticket Type", "Waiver Version", "IP Address", "Stripe Session ID", "Accepted At"],
-    ];
-    await appendToSheet(accessToken, spreadsheetId, sheetName, headerRow);
+    await appendToSheet(accessToken, spreadsheetId, sheetName, [headers]);
   }
 }
+
+function buildWaiverRow(record: Record<string, string>): string[] {
+  return [
+    record.id || "",
+    record.attendee_name || "",
+    record.attendee_email || "",
+    record.attendee_phone || "",
+    record.attendee_address || "",
+    record.ticket_type || "",
+    record.waiver_version || "",
+    record.ip_address || "",
+    record.stripe_session_id || "",
+    record.accepted_at || "",
+  ];
+}
+
+function buildNewsletterRow(record: Record<string, string>): string[] {
+  return [
+    record.id || "",
+    record.name || "",
+    record.email || "",
+    record.created_at || "",
+  ];
+}
+
+function buildVolunteerRow(record: Record<string, string>): string[] {
+  return [
+    record.id || "",
+    record.full_name || "",
+    record.email || "",
+    record.phone || "",
+    record.about || "",
+    record.availability || "",
+    record.experience || "",
+    record.why_earth_song || "",
+    record.created_at || "",
+  ];
+}
+
+const SHEET_CONFIG: Record<string, { name: string; headers: string[]; buildRow: (r: Record<string, string>) => string[] }> = {
+  waiver: {
+    name: "Waiver Acceptances",
+    headers: ["ID", "Name", "Email", "Phone", "Address", "Ticket Type", "Waiver Version", "IP Address", "Stripe Session ID", "Accepted At"],
+    buildRow: buildWaiverRow,
+  },
+  newsletter: {
+    name: "Newsletter Signups",
+    headers: ["ID", "Name", "Email", "Signed Up At"],
+    buildRow: buildNewsletterRow,
+  },
+  volunteer: {
+    name: "Volunteer Applications",
+    headers: ["ID", "Full Name", "Email", "Phone", "About", "Availability", "Experience", "Why Earth Song?", "Applied At"],
+    buildRow: buildVolunteerRow,
+  },
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -178,6 +232,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const record = body.record;
+    const type: string = body.type || "waiver";
 
     if (!record) {
       return new Response(
@@ -186,31 +241,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    const config = SHEET_CONFIG[type];
+    if (!config) {
+      return new Response(
+        JSON.stringify({ error: `Unknown type: ${type}. Must be one of: waiver, newsletter, volunteer` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const accessToken = await getGoogleAccessToken(serviceAccountJson);
-    const sheetName = "Waiver Acceptances";
 
-    await ensureSheetTab(accessToken, spreadsheetId, sheetName);
-    await ensureHeaders(accessToken, spreadsheetId, sheetName);
+    await ensureSheetTab(accessToken, spreadsheetId, config.name);
+    await ensureHeaders(accessToken, spreadsheetId, config.name, config.headers);
 
-    const row = [
-      [
-        record.id || "",
-        record.attendee_name || "",
-        record.attendee_email || "",
-        record.attendee_phone || "",
-        record.attendee_address || "",
-        record.ticket_type || "",
-        record.waiver_version || "",
-        record.ip_address || "",
-        record.stripe_session_id || "",
-        record.accepted_at || "",
-      ],
-    ];
-
-    await appendToSheet(accessToken, spreadsheetId, sheetName, row);
+    const row = [config.buildRow(record)];
+    await appendToSheet(accessToken, spreadsheetId, config.name, row);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Row appended to Google Sheet" }),
+      JSON.stringify({ success: true, message: `Row appended to "${config.name}" tab` }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
