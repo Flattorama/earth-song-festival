@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Loader as Loader2 } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Loader as Loader2, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,8 +37,21 @@ const WaiverDialog = ({
   const [address, setAddress] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const canSubmit = name.trim() !== "" && email.trim() !== "" && agreed;
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    if (nearBottom) setShowScrollHint(false);
+  }, []);
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  };
 
   const handleProceed = async () => {
     if (!canSubmit) return;
@@ -91,6 +103,7 @@ const WaiverDialog = ({
     setPhone("");
     setAddress("");
     setAgreed(false);
+    setShowScrollHint(true);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -113,7 +126,12 @@ const WaiverDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0">
+        <div className="relative flex-1 min-h-0">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="h-full overflow-y-auto overscroll-contain"
+          >
           <div className="px-6">
             <WaiverContent />
           </div>
@@ -196,7 +214,19 @@ const WaiverDialog = ({
             )}
           </Button>
         </div>
-        </ScrollArea>
+          </div>
+
+          {showScrollHint && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+              Scroll to bottom
+            </button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
