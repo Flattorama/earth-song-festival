@@ -16,11 +16,12 @@ const EmailCaptureSection = () => {
     setErrorMsg("");
 
     try {
-      const { data, error } = await supabase
+      const trimmedName = name.trim();
+      const trimmedEmail = email.trim();
+
+      const { error } = await supabase
         .from("newsletter_signups")
-        .insert({ name: name.trim(), email: email.trim() })
-        .select()
-        .single();
+        .insert({ name: trimmedName, email: trimmedEmail });
 
       if (error) throw error;
 
@@ -30,12 +31,12 @@ const EmailCaptureSection = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ type: "newsletter", record: data }),
+        body: JSON.stringify({ type: "newsletter", record: { name: trimmedName, email: trimmedEmail } }),
       }).catch(() => {});
 
       const mlForm = new FormData();
-      mlForm.append("fields[name]", name.trim());
-      mlForm.append("fields[email]", email.trim());
+      mlForm.append("fields[name]", trimmedName);
+      mlForm.append("fields[email]", trimmedEmail);
       mlForm.append("ml-submit", "1");
       mlForm.append("anticsrf", "true");
       fetch("https://assets.mailerlite.com/jsonp/2143726/forms/180874923059709145/subscribe", {

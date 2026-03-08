@@ -27,19 +27,19 @@ const MailerLiteVolunteerForm = () => {
     setErrorMsg("");
 
     try {
-      const { data, error } = await supabase
+      const trimmed = {
+        full_name: fields.full_name.trim(),
+        email: fields.email.trim(),
+        phone: fields.phone.trim(),
+        about: fields.about.trim(),
+        availability: fields.availability.trim(),
+        experience: fields.experience.trim(),
+        why_earth_song: fields.why_earth_song.trim(),
+      };
+
+      const { error } = await supabase
         .from("volunteer_applications")
-        .insert({
-          full_name: fields.full_name.trim(),
-          email: fields.email.trim(),
-          phone: fields.phone.trim(),
-          about: fields.about.trim(),
-          availability: fields.availability.trim(),
-          experience: fields.experience.trim(),
-          why_earth_song: fields.why_earth_song.trim(),
-        })
-        .select()
-        .single();
+        .insert(trimmed);
 
       if (error) throw error;
 
@@ -49,17 +49,17 @@ const MailerLiteVolunteerForm = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({ type: "volunteer", record: data }),
+        body: JSON.stringify({ type: "volunteer", record: trimmed }),
       }).catch(() => {});
 
       const mlForm = new FormData();
-      mlForm.append("fields[name]", fields.full_name.trim());
-      mlForm.append("fields[email]", fields.email.trim());
-      mlForm.append("fields[phone]", fields.phone.trim());
-      mlForm.append("fields[about]", fields.about.trim());
-      mlForm.append("fields[availability]", fields.availability.trim());
-      mlForm.append("fields[experience]", fields.experience.trim());
-      mlForm.append("fields[why]", fields.why_earth_song.trim());
+      mlForm.append("fields[name]", trimmed.full_name);
+      mlForm.append("fields[email]", trimmed.email);
+      mlForm.append("fields[phone]", trimmed.phone);
+      mlForm.append("fields[about]", trimmed.about);
+      mlForm.append("fields[availability]", trimmed.availability);
+      mlForm.append("fields[experience]", trimmed.experience);
+      mlForm.append("fields[why]", trimmed.why_earth_song);
       mlForm.append("ml-submit", "1");
       mlForm.append("anticsrf", "true");
       fetch("https://assets.mailerlite.com/jsonp/2143726/forms/180874923059709145/subscribe", {
