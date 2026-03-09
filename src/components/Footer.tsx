@@ -80,7 +80,9 @@ const Footer = () => {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.instagram.com/earthsong_festival_retreat"
+                target="_blank"
+                rel="noopener noreferrer"
                 data-testid="link-social-instagram"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Instagram"
@@ -88,7 +90,9 @@ const Footer = () => {
                 <Instagram className="w-5 h-5 text-gold" />
               </a>
               <a
-                href="#"
+                href="https://www.facebook.com/share/1MqqHhfB5N/"
+                target="_blank"
+                rel="noopener noreferrer"
                 data-testid="link-social-facebook"
                 className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-gold/20 transition-colors"
                 aria-label="Facebook"
