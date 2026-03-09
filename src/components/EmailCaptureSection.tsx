@@ -1,4 +1,18 @@
+import { useEffect } from "react";
+
+declare global {
+  interface Window {
+    ml?: (...args: unknown[]) => void;
+  }
+}
+
 const EmailCaptureSection = () => {
+  useEffect(() => {
+    if (window.ml) {
+      window.ml("account", "2143726");
+    }
+  }, []);
+
   return (
     <section className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4 max-w-2xl text-center">

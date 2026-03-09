@@ -1,6 +1,19 @@
+import { useEffect } from "react";
 import { Clock } from "lucide-react";
 
+declare global {
+  interface Window {
+    ml?: (...args: unknown[]) => void;
+  }
+}
+
 const VolunteerSection = () => {
+  useEffect(() => {
+    if (window.ml) {
+      window.ml("account", "2143726");
+    }
+  }, []);
+
   return (
     <section id="volunteer" className="py-20 md:py-28 bg-secondary text-secondary-foreground">
       <div className="container mx-auto px-4">
