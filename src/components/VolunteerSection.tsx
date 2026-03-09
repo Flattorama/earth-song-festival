@@ -1,18 +1,8 @@
-import { useEffect } from "react";
 import { Clock } from "lucide-react";
-
-declare global {
-  interface Window {
-    ml?: (...args: unknown[]) => void;
-  }
-}
+import { useMailerLite } from "@/hooks/useMailerLite";
 
 const VolunteerSection = () => {
-  useEffect(() => {
-    if (window.ml) {
-      window.ml("account", "2143726");
-    }
-  }, []);
+  useMailerLite();
 
   return (
     <section id="volunteer" className="py-20 md:py-28 bg-secondary text-secondary-foreground">
