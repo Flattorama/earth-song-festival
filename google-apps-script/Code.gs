@@ -149,7 +149,7 @@ function resolveTabName(group, eventType) {
 
   // Check by group name (case-insensitive partial match)
   var groupName = (group.name || "").toLowerCase();
-  if (groupName.indexOf("newsletter") !== -1) {
+  if (groupName.indexOf("newsletter") !== -1 || groupName.indexOf("web sign") !== -1 || groupName.indexOf("earth song") !== -1) {
     return "Newsletter Form Fills (MailerLite)";
   }
   if (groupName.indexOf("volunteer") !== -1) {
