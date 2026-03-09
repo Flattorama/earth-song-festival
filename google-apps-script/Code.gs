@@ -32,9 +32,8 @@ var SPREADSHEET_ID = "10ID1i6hIpcafKiaWHInzHrWLmtMvMtiF6TlSD4x9sHw";
  * or via the MailerLite API: GET https://connect.mailerlite.com/api/groups
  */
 var GROUP_TO_TAB = {
-  // Replace these placeholder IDs with real MailerLite group IDs
-  "newsletter_group_id": "Newsletter Form Fills (MailerLite)",
-  "volunteer_group_id":  "Volunteer form fills (MailerLite)"
+  "180087495434187685": "Newsletter Signups",   // Earth Song Festival Web Sign Ups
+  "volunteer_group_id": "Volunteer Applications" // Update with real volunteer group ID
 };
 
 /**
@@ -42,14 +41,14 @@ var GROUP_TO_TAB = {
  * Adjust these to match the columns already in your sheet.
  */
 var TAB_COLUMNS = {
-  "Newsletter Form Fills (MailerLite)": [
+  "Newsletter Signups": [
     "Timestamp",
     "Email",
     "First Name",
     "Last Name",
     "Source"
   ],
-  "Volunteer form fills (MailerLite)": [
+  "Volunteer Applications": [
     "Timestamp",
     "Email",
     "First Name",
@@ -96,9 +95,10 @@ function doGet() {
 
 function processWebhookEvent(payload) {
   // MailerLite webhook payload structure
-  var eventType = payload.type || "";
-  var subscriber = (payload.data && payload.data.subscriber) || payload.data || {};
-  var group = (payload.data && payload.data.group) || {};
+  // MailerLite sends subscriber and group at the top level (not nested under data)
+  var eventType = payload.type || payload.event || "";
+  var subscriber = payload.subscriber || (payload.data && payload.data.subscriber) || payload.data || {};
+  var group = payload.group || (payload.data && payload.data.group) || {};
 
   // Determine which tab to write to
   var tabName = resolveTabName(group, eventType);
@@ -150,15 +150,15 @@ function resolveTabName(group, eventType) {
   // Check by group name (case-insensitive partial match)
   var groupName = (group.name || "").toLowerCase();
   if (groupName.indexOf("newsletter") !== -1 || groupName.indexOf("web sign") !== -1 || groupName.indexOf("earth song") !== -1) {
-    return "Newsletter Form Fills (MailerLite)";
+    return "Newsletter Signups";
   }
   if (groupName.indexOf("volunteer") !== -1) {
-    return "Volunteer form fills (MailerLite)";
+    return "Volunteer Applications";
   }
 
-  // For subscriber.create events without a group, default to newsletter
-  if (eventType === "subscriber.create" || eventType === "subscriber.added_through_form") {
-    return "Newsletter Form Fills (MailerLite)";
+  // For subscriber.created events without a group, default to newsletter
+  if (eventType === "subscriber.created" || eventType === "subscriber.create" || eventType === "subscriber.added_through_form") {
+    return "Newsletter Signups";
   }
 
   return null;
@@ -238,20 +238,18 @@ function logError(context, error, details) {
 function testWebhook() {
   var mockPayload = {
     type: "subscriber.added_to_group",
-    data: {
-      subscriber: {
-        email: "test@example.com",
-        source: "api",
-        fields: {
-          name: "Test",
-          last_name: "User",
-          phone: "555-0100"
-        }
-      },
-      group: {
-        id: "newsletter_group_id",
-        name: "Newsletter"
+    subscriber: {
+      email: "test@example.com",
+      source: "api",
+      fields: {
+        name: "Test",
+        last_name: "User",
+        phone: "555-0100"
       }
+    },
+    group: {
+      id: "180087495434187685",
+      name: "Earth Song Festival Web Sign Ups"
     }
   };
 
