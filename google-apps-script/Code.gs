@@ -101,7 +101,7 @@ function processWebhookEvent(payload) {
   var group = payload.group || (payload.data && payload.data.group) || {};
 
   // Determine which tab to write to
-  var tabName = resolveTabName(group, eventType);
+  var tabName = resolveTabName(group, eventType, subscriber);
   if (!tabName) {
     // If we can't determine the tab, log to a fallback
     logUnmapped(payload);
@@ -139,24 +139,33 @@ function processWebhookEvent(payload) {
 
 /**
  * Resolves the sheet tab name from the webhook payload.
- * Checks group ID first, then falls back to group name matching.
+ * Checks group ID first, then subscriber fields to distinguish
+ * volunteer form fills (which include phone) from newsletter signups.
  */
-function resolveTabName(group, eventType) {
-  // Check by group ID
+function resolveTabName(group, eventType, subscriber) {
+  // Check by group ID (if forms use separate groups)
   if (group.id && GROUP_TO_TAB[String(group.id)]) {
     return GROUP_TO_TAB[String(group.id)];
   }
 
-  // Check by group name (case-insensitive partial match)
+  // Check by group name for a dedicated volunteer group
   var groupName = (group.name || "").toLowerCase();
-  if (groupName.indexOf("newsletter") !== -1 || groupName.indexOf("web sign") !== -1 || groupName.indexOf("earth song") !== -1) {
-    return "Newsletter Signups";
-  }
   if (groupName.indexOf("volunteer") !== -1) {
     return "Volunteer Applications";
   }
 
-  // For subscriber.created events without a group, default to newsletter
+  // Both forms may add to the same general group, so check subscriber
+  // fields to distinguish: the volunteer form collects phone while the
+  // newsletter form does not.
+  var fields = (subscriber && subscriber.fields) || {};
+  if (fields.phone) {
+    return "Volunteer Applications";
+  }
+
+  // Any known group or subscriber event → newsletter
+  if (groupName.indexOf("newsletter") !== -1 || groupName.indexOf("web sign") !== -1 || groupName.indexOf("earth song") !== -1) {
+    return "Newsletter Signups";
+  }
   if (eventType === "subscriber.created" || eventType === "subscriber.create" || eventType === "subscriber.added_through_form") {
     return "Newsletter Signups";
   }
