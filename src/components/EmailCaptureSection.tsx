@@ -1,17 +1,7 @@
-import { useEffect } from "react";
-
-declare global {
-  interface Window {
-    ml?: (...args: unknown[]) => void;
-  }
-}
+import { useMailerLite } from "@/hooks/useMailerLite";
 
 const EmailCaptureSection = () => {
-  useEffect(() => {
-    if (window.ml) {
-      window.ml("account", "2143726");
-    }
-  }, []);
+  useMailerLite();
 
   return (
     <section className="py-20 md:py-28 bg-background">
