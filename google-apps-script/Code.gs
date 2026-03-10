@@ -143,9 +143,12 @@ function processWebhookEvent(payload) {
  * volunteer form fills (which include phone) from newsletter signups.
  */
 function resolveTabName(group, eventType, subscriber) {
-  // Check by group ID (if forms use separate groups)
-  if (group.id && GROUP_TO_TAB[String(group.id)]) {
-    return GROUP_TO_TAB[String(group.id)];
+  // Check subscriber fields first — the volunteer form collects phone
+  // while the newsletter form does not. This must run before the group ID
+  // check because both forms add to the same MailerLite group.
+  var fields = (subscriber && subscriber.fields) || {};
+  if (fields.phone) {
+    return "Volunteer Applications";
   }
 
   // Check by group name for a dedicated volunteer group
@@ -154,15 +157,12 @@ function resolveTabName(group, eventType, subscriber) {
     return "Volunteer Applications";
   }
 
-  // Both forms may add to the same general group, so check subscriber
-  // fields to distinguish: the volunteer form collects phone while the
-  // newsletter form does not.
-  var fields = (subscriber && subscriber.fields) || {};
-  if (fields.phone) {
-    return "Volunteer Applications";
+  // Check by group ID
+  if (group.id && GROUP_TO_TAB[String(group.id)]) {
+    return GROUP_TO_TAB[String(group.id)];
   }
 
-  // Any known group or subscriber event → newsletter
+  // Any known group name → newsletter
   if (groupName.indexOf("newsletter") !== -1 || groupName.indexOf("web sign") !== -1 || groupName.indexOf("earth song") !== -1) {
     return "Newsletter Signups";
   }
