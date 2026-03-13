@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Early Bird expiry: March 20, 2026 at 11:59:59 PM EST = March 21, 2026 04:59:59 UTC
-    if (ticketType === "early-bird" && new Date() >= new Date("2026-03-21T04:59:59Z")) {
+    // Early Bird expiry: May 1, 2026 at 11:59:59 PM EST = May 2, 2026 03:59:59 UTC
+    if (ticketType === "early-bird" && new Date() >= new Date("2026-05-02T03:59:59Z")) {
       return new Response(
         JSON.stringify({ error: "Early Bird tickets are no longer available." }),
         {

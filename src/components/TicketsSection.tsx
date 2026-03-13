@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import WaiverDialog from "./WaiverDialog";
 
-const EARLY_BIRD_CUTOFF = new Date("2026-03-21T04:59:59Z");
+const EARLY_BIRD_CUTOFF = new Date("2026-05-02T03:59:59Z");
 
 const ticketTiers = [
   {
@@ -22,7 +22,7 @@ const ticketTiers = [
     popular: true,
     cta: "Reserve Early Bird",
     ticketType: "early-bird",
-    expiryNotice: "Available until March 20, 2026 at 11:59 PM EST",
+    expiryNotice: "Available until May 1, 2026 at 11:59 PM EST",
   },
   {
     name: "Regular Admission",

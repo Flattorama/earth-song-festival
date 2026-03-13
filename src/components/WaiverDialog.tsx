@@ -46,9 +46,7 @@ const WaiverDialog = ({
   const canSubmit =
     name.trim() !== "" &&
     email.trim() !== "" &&
-    agreed &&
-    section1Checked &&
-    section2Checked;
+    agreed;
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
