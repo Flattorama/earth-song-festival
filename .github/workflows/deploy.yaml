@@ -31,7 +31,8 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        # IMPORTANT: Replace YOUR_REPO_NAME with your actual repository name
+        run: npm run build -- --base=/YOUR_REPO_NAME/
         env:
           GITHUB_ACTIONS: "true" 
 
