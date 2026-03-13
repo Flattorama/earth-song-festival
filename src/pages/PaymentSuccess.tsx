@@ -38,7 +38,7 @@ const PaymentSuccess = () => {
     }
 
     const fetchPurchase = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("purchases")
         .select("id, buyer_name, buyer_email, ticket_type, quantity")
         .eq("stripe_session_id", sessionId)
@@ -66,11 +66,7 @@ const PaymentSuccess = () => {
     fetchPurchase();
   }, [sessionId]);
 
-  const updateAttendee = (
-    index: number,
-    field: keyof AttendeeForm,
-    value: string
-  ) => {
+  const updateAttendee = (index: number, field: keyof AttendeeForm, value: string) => {
     setAttendees((prev) =>
       prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
     );
@@ -104,13 +100,13 @@ const PaymentSuccess = () => {
         waiver_status: "pending",
       }));
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from("attendees")
         .insert([buyerRow, ...additionalRows]);
 
       if (insertError) throw insertError;
 
-      const { data: inserted } = await supabase
+      const { data: inserted } = await (supabase as any)
         .from("attendees")
         .select("id, name, email, waiver_token")
         .eq("purchase_id", purchase.id)
@@ -119,7 +115,7 @@ const PaymentSuccess = () => {
       if (inserted && inserted.length > 0) {
         await supabase.functions.invoke("send-waiver-emails", {
           body: {
-            attendees: inserted.map((att) => ({
+            attendees: inserted.map((att: any) => ({
               name: att.name,
               email: att.email,
               waiver_token: att.waiver_token,
@@ -141,7 +137,7 @@ const PaymentSuccess = () => {
 
   const handleSingleTicketMount = async () => {
     if (!purchase) return;
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from("attendees")
       .select("id")
       .eq("purchase_id", purchase.id)
@@ -149,7 +145,7 @@ const PaymentSuccess = () => {
 
     if (existing && existing.length > 0) return;
 
-    await supabase.from("attendees").insert({
+    await (supabase as any).from("attendees").insert({
       purchase_id: purchase.id,
       name: purchase.buyer_name,
       email: purchase.buyer_email,
@@ -230,12 +226,8 @@ const PaymentSuccess = () => {
               1
             </div>
             <div>
-              <p className="font-semibold text-foreground">
-                {purchase.buyer_name}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {purchase.buyer_email}
-              </p>
+              <p className="font-semibold text-foreground">{purchase.buyer_name}</p>
+              <p className="text-sm text-muted-foreground">{purchase.buyer_email}</p>
             </div>
             <span className="ml-auto text-xs font-medium text-accent bg-accent/10 px-2.5 py-1 rounded-full">
               Waiver Signed
@@ -245,10 +237,7 @@ const PaymentSuccess = () => {
 
         <div className="space-y-6">
           {attendees.map((att, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl border border-border p-6"
-            >
+            <div key={index} className="bg-white rounded-2xl border border-border p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-semibold">
                   {index + 2}
@@ -265,9 +254,7 @@ const PaymentSuccess = () => {
                   <Input
                     placeholder="Full name"
                     value={att.name}
-                    onChange={(e) =>
-                      updateAttendee(index, "name", e.target.value)
-                    }
+                    onChange={(e) => updateAttendee(index, "name", e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -278,9 +265,7 @@ const PaymentSuccess = () => {
                     type="email"
                     placeholder="attendee@example.com"
                     value={att.email}
-                    onChange={(e) =>
-                      updateAttendee(index, "email", e.target.value)
-                    }
+                    onChange={(e) => updateAttendee(index, "email", e.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -289,9 +274,7 @@ const PaymentSuccess = () => {
                     type="tel"
                     placeholder="(optional)"
                     value={att.phone}
-                    onChange={(e) =>
-                      updateAttendee(index, "phone", e.target.value)
-                    }
+                    onChange={(e) => updateAttendee(index, "phone", e.target.value)}
                   />
                 </div>
               </div>
