@@ -1,15 +1,20 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { CircleCheck as CheckCircle, Loader as Loader2, CircleAlert as AlertCircle } from "lucide-react";
+import {
+  CircleCheck as CheckCircle,
+  Loader as Loader2,
+  CircleAlert as AlertCircle,
+  ChevronDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import WaiverContent from "@/components/WaiverContent";
 import SignaturePad from "@/components/SignaturePad";
+import { useRef, useCallback } from "react";
 
 interface AttendeeData {
   id: string;
@@ -32,7 +37,22 @@ const SignWaiver = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [section1Checked, setSection1Checked] = useState(false);
+  const [section2Checked, setSection2Checked] = useState(false);
   const [signatureData, setSignatureData] = useState("");
+  const [showScrollHint, setShowScrollHint] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    if (nearBottom) setShowScrollHint(false);
+  }, []);
+
+  const scrollDown = () => {
+    scrollRef.current?.scrollBy({ top: 200, behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (!token) {
@@ -42,7 +62,7 @@ const SignWaiver = () => {
     }
 
     const fetchAttendee = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("attendees")
         .select("id, name, email, phone, waiver_status")
         .eq("waiver_token", token)
@@ -69,6 +89,8 @@ const SignWaiver = () => {
     legalName.trim() !== "" &&
     email.trim() !== "" &&
     agreed &&
+    section1Checked &&
+    section2Checked &&
     signatureData !== "";
 
   const handleSign = async () => {
@@ -76,7 +98,7 @@ const SignWaiver = () => {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("attendees")
         .update({
           name: legalName.trim(),
@@ -151,24 +173,56 @@ const SignWaiver = () => {
             Liability Waiver Agreement
           </h1>
           <p className="text-foreground/60">
-            Earth Song Festival Retreat -- August 7-9, 2026
+            Earth Song Festival Retreat — August 7–9, 2026
           </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-border overflow-hidden">
           <div className="px-6 pt-6 pb-2">
             <p className="text-sm text-foreground/70">
-              Hi <span className="font-medium text-foreground">{attendee?.name}</span>,
-              please read the waiver below, confirm your information, and provide
-              your digital signature.
+              Hi{" "}
+              <span className="font-medium text-foreground">
+                {attendee?.name}
+              </span>
+              , please read the waiver below, confirm your information, and
+              provide your digital signature.
             </p>
           </div>
 
-          <div className="px-6">
-            <ScrollArea className="max-h-[40vh] mt-4 pr-2">
-              <WaiverContent />
+          <div className="px-6 relative">
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="overflow-y-auto mt-4 pr-2"
+              style={{
+                maxHeight: "400px",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <WaiverContent
+                showCheckboxes
+                section1Checked={section1Checked}
+                onSection1Change={setSection1Checked}
+                section2Checked={section2Checked}
+                onSection2Change={setSection2Checked}
+              />
               <div className="h-4" />
-            </ScrollArea>
+            </div>
+            {showScrollHint && (
+              <>
+                <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                <div className="flex justify-center py-1">
+                  <button
+                    type="button"
+                    onClick={scrollDown}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:opacity-90 transition-opacity"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    Scroll to read full agreement
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="border-t border-border px-6 py-6 space-y-4">
@@ -220,9 +274,7 @@ const SignWaiver = () => {
               <Label>
                 Digital Signature <span className="text-destructive">*</span>
               </Label>
-              <SignaturePad
-                onSignatureChange={setSignatureData}
-              />
+              <SignaturePad onSignatureChange={setSignatureData} />
             </div>
 
             <div className="flex items-start gap-3 pt-1">
