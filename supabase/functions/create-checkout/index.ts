@@ -1,5 +1,5 @@
-import Stripe from "npm:stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +53,17 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Early Bird expiry: May 1, 2026 at 11:59:59 PM EST = May 2, 2026 03:59:59 UTC
+    if (ticketType === "early-bird" && new Date() >= new Date("2026-05-02T03:59:59Z")) {
+      return new Response(
+        JSON.stringify({ error: "Early Bird tickets are no longer available." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");

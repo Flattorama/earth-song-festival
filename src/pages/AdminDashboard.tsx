@@ -3,12 +3,7 @@ import { Loader as Loader2, RefreshCw, Shield, ShieldCheck, Clock } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,11 +46,11 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     const [attendeesRes, purchasesRes] = await Promise.all([
-      supabase
+      (supabase as any)
         .from("attendees")
         .select("*")
         .order("created_at", { ascending: false }),
-      supabase
+      (supabase as any)
         .from("purchases")
         .select("*")
         .order("created_at", { ascending: false }),
@@ -77,30 +72,19 @@ const AdminDashboard = () => {
     if (filter === "pending" && a.waiver_status !== "pending") return false;
     if (search.trim()) {
       const q = search.toLowerCase();
-      return (
-        a.name.toLowerCase().includes(q) ||
-        a.email.toLowerCase().includes(q)
-      );
+      return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q);
     }
     return true;
   });
 
   const totalAttendees = attendees.length;
-  const signedCount = attendees.filter(
-    (a) => a.waiver_status === "signed"
-  ).length;
-  const pendingCount = attendees.filter(
-    (a) => a.waiver_status === "pending"
-  ).length;
+  const signedCount = attendees.filter((a) => a.waiver_status === "signed").length;
+  const pendingCount = attendees.filter((a) => a.waiver_status === "pending").length;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "--";
     return new Date(dateStr).toLocaleDateString("en-CA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
   };
 
@@ -113,18 +97,11 @@ const AdminDashboard = () => {
               Attendee Dashboard
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Earth Song Festival Retreat -- Waiver tracking
+              Earth Song Festival Retreat — Waiver tracking
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchData}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
@@ -138,12 +115,8 @@ const AdminDashboard = () => {
                 <Shield className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalAttendees}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Total Attendees
-                </p>
+                <p className="text-2xl font-bold text-foreground">{totalAttendees}</p>
+                <p className="text-sm text-muted-foreground">Total Attendees</p>
               </div>
             </div>
           </div>
@@ -153,9 +126,7 @@ const AdminDashboard = () => {
                 <ShieldCheck className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {signedCount}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{signedCount}</p>
                 <p className="text-sm text-muted-foreground">Waivers Signed</p>
               </div>
             </div>
@@ -166,12 +137,8 @@ const AdminDashboard = () => {
                 <Clock className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {pendingCount}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Waivers Pending
-                </p>
+                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
+                <p className="text-sm text-muted-foreground">Waivers Pending</p>
               </div>
             </div>
           </div>
@@ -232,16 +199,11 @@ const AdminDashboard = () => {
                     const purchase = purchaseMap.get(a.purchase_id);
                     return (
                       <TableRow key={a.id}>
-                        <TableCell className="font-medium">
-                          {a.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {a.email}
-                        </TableCell>
+                        <TableCell className="font-medium">{a.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{a.email}</TableCell>
                         <TableCell>
                           {purchase
-                            ? TICKET_LABELS[purchase.ticket_type] ||
-                              purchase.ticket_type
+                            ? TICKET_LABELS[purchase.ticket_type] || purchase.ticket_type
                             : "--"}
                         </TableCell>
                         <TableCell>
@@ -250,9 +212,7 @@ const AdminDashboard = () => {
                               Buyer
                             </span>
                           ) : (
-                            <span className="text-xs text-muted-foreground">
-                              Attendee
-                            </span>
+                            <span className="text-xs text-muted-foreground">Attendee</span>
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
