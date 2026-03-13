@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { Loader as Loader2, ChevronDown } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Loader as Loader2, ChevronDown, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
+import { supabase } from "@/integrations/supabase/client";
+
 const CHECKOUT_URL =
   "https://uxsastmtftysfwjgvkzu.supabase.co/functions/v1/create-checkout";
 const ANON_KEY =
@@ -38,6 +40,11 @@ const WaiverDialog = ({
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(true);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<
+    "idle" | "validating" | "valid" | "invalid"
+  >("idle");
+  const [referralFacilitator, setReferralFacilitator] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const canSubmit = name.trim() !== "" && email.trim() !== "" && agreed;
@@ -47,6 +54,30 @@ const WaiverDialog = ({
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (nearBottom) setShowScrollHint(false);
+  }, []);
+
+  const validateReferralCode = useCallback(async (code: string) => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      setReferralStatus("idle");
+      setReferralFacilitator("");
+      return;
+    }
+    setReferralStatus("validating");
+    const { data, error } = await supabase
+      .from("referral_codes")
+      .select("facilitator_name")
+      .eq("code", trimmed)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error || !data) {
+      setReferralStatus("invalid");
+      setReferralFacilitator("");
+    } else {
+      setReferralStatus("valid");
+      setReferralFacilitator(data.facilitator_name);
+    }
   }, []);
 
   const scrollToBottom = () => {
@@ -71,6 +102,7 @@ const WaiverDialog = ({
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerAddress: address.trim(),
+          referralCode: referralStatus === "valid" ? referralCode.trim().toUpperCase() : undefined,
         }),
       });
 
@@ -104,6 +136,9 @@ const WaiverDialog = ({
     setAddress("");
     setAgreed(false);
     setShowScrollHint(true);
+    setReferralCode("");
+    setReferralStatus("idle");
+    setReferralFacilitator("");
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -183,6 +218,38 @@ const WaiverDialog = ({
                 onChange={(e) => setAddress(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="referral-code">Referral Code (optional)</Label>
+            <Input
+              id="referral-code"
+              placeholder="e.g. SHANNON"
+              value={referralCode}
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase();
+                setReferralCode(val);
+                if (!val.trim()) {
+                  setReferralStatus("idle");
+                  setReferralFacilitator("");
+                }
+              }}
+              onBlur={() => validateReferralCode(referralCode)}
+            />
+            {referralStatus === "validating" && (
+              <p className="text-sm text-muted-foreground">Checking code...</p>
+            )}
+            {referralStatus === "valid" && (
+              <p className="text-sm text-accent flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                Referred by {referralFacilitator}
+              </p>
+            )}
+            {referralStatus === "invalid" && (
+              <p className="text-sm text-muted-foreground">
+                Code not recognized — no worries, you can continue without one.
+              </p>
+            )}
           </div>
 
           <div className="flex items-start gap-3 pt-1">

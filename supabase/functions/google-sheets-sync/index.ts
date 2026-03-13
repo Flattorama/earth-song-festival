@@ -166,6 +166,7 @@ function buildWaiverRow(record: Record<string, string>): string[] {
     record.attendee_phone || "",
     record.attendee_address || "",
     record.ticket_type || "",
+    record.referral_code || "",
     record.waiver_version || "",
     record.ip_address || "",
     record.stripe_session_id || "",
@@ -199,7 +200,7 @@ function buildVolunteerRow(record: Record<string, string>): string[] {
 const SHEET_CONFIG: Record<string, { name: string; headers: string[]; buildRow: (r: Record<string, string>) => string[] }> = {
   waiver: {
     name: "Waiver Acceptances",
-    headers: ["ID", "Name", "Email", "Phone", "Address", "Ticket Type", "Waiver Version", "IP Address", "Stripe Session ID", "Accepted At"],
+    headers: ["ID", "Name", "Email", "Phone", "Address", "Ticket Type", "Referral Code", "Waiver Version", "IP Address", "Stripe Session ID", "Accepted At"],
     buildRow: buildWaiverRow,
   },
   newsletter: {

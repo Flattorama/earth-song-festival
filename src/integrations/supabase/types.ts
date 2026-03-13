@@ -62,6 +62,33 @@ export type Database = {
           }
         ]
       }
+      referral_codes: {
+        Row: {
+          id: string
+          code: string
+          facilitator_name: string
+          facilitator_email: string | null
+          is_active: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          code: string
+          facilitator_name: string
+          facilitator_email?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          code?: string
+          facilitator_name?: string
+          facilitator_email?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       newsletter_signups: {
         Row: {
           id: string
@@ -92,6 +119,7 @@ export type Database = {
           ticket_type: string
           quantity: number
           total_amount: number
+          referral_code: string | null
           created_at: string | null
         }
         Insert: {
@@ -102,6 +130,7 @@ export type Database = {
           ticket_type: string
           quantity?: number
           total_amount?: number
+          referral_code?: string | null
           created_at?: string | null
         }
         Update: {
@@ -112,6 +141,7 @@ export type Database = {
           ticket_type?: string
           quantity?: number
           total_amount?: number
+          referral_code?: string | null
           created_at?: string | null
         }
         Relationships: []
@@ -286,6 +316,7 @@ export type Database = {
           ip_address: string | null
           accepted_at: string | null
           stripe_session_id: string | null
+          referral_code: string | null
         }
         Insert: {
           id?: string
@@ -298,6 +329,7 @@ export type Database = {
           ip_address?: string | null
           accepted_at?: string | null
           stripe_session_id?: string | null
+          referral_code?: string | null
         }
         Update: {
           id?: string
@@ -310,6 +342,7 @@ export type Database = {
           ip_address?: string | null
           accepted_at?: string | null
           stripe_session_id?: string | null
+          referral_code?: string | null
         }
         Relationships: []
       }
