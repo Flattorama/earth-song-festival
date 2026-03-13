@@ -24,7 +24,7 @@ const faqItems = [
   },
   {
     question: "Is the event alcohol-free?",
-    answer: "Yes. Earth Song is an alcohol-free and substance-free gathering. We believe in experiencing the fullness of ceremony and connection with clarity and presence. This is a core value of our space.",
+    answer: "Yes. Earth Song is an alcohol-free gathering. We believe in experiencing the fullness of ceremony and connection with clarity and presence. This is a core value of our space.",
   },
   {
     question: 'What does "Leave No Trace" mean?',
