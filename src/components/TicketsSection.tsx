@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import WaiverDialog from "./WaiverDialog";
 
-const EARLY_BIRD_CUTOFF = new Date("2026-03-21T04:59:59Z");
-
 const ticketTiers = [
   {
     name: "Early Bird",
@@ -22,7 +20,6 @@ const ticketTiers = [
     popular: true,
     cta: "Reserve Early Bird",
     ticketType: "early-bird",
-    expiryNotice: "Available until March 20, 2026 at 11:59 PM EST",
   },
   {
     name: "Regular Admission",
@@ -38,7 +35,6 @@ const ticketTiers = [
     popular: false,
     cta: "Get Tickets",
     ticketType: "regular-admission",
-    expiryNotice: null,
   },
   {
     name: "Saturday Day Pass",
@@ -53,7 +49,6 @@ const ticketTiers = [
     popular: false,
     cta: "Get Day Pass",
     ticketType: "saturday-day-pass",
-    expiryNotice: null,
   },
 ];
 
@@ -64,18 +59,10 @@ const TicketsSection = () => {
     label: string;
   } | null>(null);
 
-  const now = new Date();
-  const earlyBirdExpired = now >= EARLY_BIRD_CUTOFF;
-
   const handleTicketClick = (ticketType: string, ticketLabel: string) => {
     setSelectedTicket({ type: ticketType, label: ticketLabel });
     setWaiverOpen(true);
   };
-
-  // Filter out expired Early Bird
-  const visibleTiers = ticketTiers.filter(
-    (tier) => !(tier.ticketType === "early-bird" && earlyBirdExpired)
-  );
 
   return (
     <section id="tickets" className="py-20 md:py-28 bg-background">
@@ -93,12 +80,8 @@ const TicketsSection = () => {
           </p>
         </div>
 
-        <div
-          className={`grid grid-cols-1 ${
-            visibleTiers.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"
-          } gap-6 md:gap-8 max-w-5xl mx-auto`}
-        >
-          {visibleTiers.map((tier, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+          {ticketTiers.map((tier, index) => (
             <Card
               key={index}
               className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-xl ${
@@ -129,11 +112,6 @@ const TicketsSection = () => {
                   )}
                 </div>
                 <p className="text-muted-foreground mt-2">{tier.description}</p>
-                {tier.expiryNotice && (
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-2 inline-block">
-                    {tier.expiryNotice}
-                  </p>
-                )}
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
@@ -145,7 +123,7 @@ const TicketsSection = () => {
                   ))}
                 </ul>
                 <Button
-                  data-testid={`button-ticket-${tier.name.toLowerCase().replace(" ", "-")}`}
+                  data-testid={`button-ticket-${tier.name.toLowerCase().replace(' ', '-')}`}
                   onClick={() => handleTicketClick(tier.ticketType, tier.name)}
                   className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
                     tier.popular

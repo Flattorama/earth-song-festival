@@ -24,7 +24,7 @@ const faqItems = [
   },
   {
     question: "Is the event alcohol-free?",
-    answer: "Yes. Earth Song is an alcohol-free gathering. We believe in experiencing the fullness of ceremony and connection with clarity and presence. This is a core value of our space.",
+    answer: "Yes. Earth Song is an alcohol-free and substance-free gathering. We believe in experiencing the fullness of ceremony and connection with clarity and presence. This is a core value of our space.",
   },
   {
     question: 'What does "Leave No Trace" mean?',
@@ -35,8 +35,8 @@ const faqItems = [
     answer: "We're committed to making Earth Song as accessible as possible. The terrain at Still Life Retreat includes grass, trails, and natural ground. If you have specific accessibility needs or questions, please reach out to us directly and we'll do our best to accommodate you.",
   },
   {
-    question: "Is there an age requirement?",
-    answer: "Yes. This event is for attendees 18 years of age or older. All attendees must confirm they are at least 18 when signing the waiver.",
+    question: "Can I bring my children?",
+    answer: "Earth Song is designed as an adult gathering. We ask that guests make childcare arrangements and come ready to fully immerse themselves in the experience.",
   },
   {
     question: "What's the refund policy?",
