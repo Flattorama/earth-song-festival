@@ -16,9 +16,9 @@ import WaiverContent from "./WaiverContent";
 import { supabase } from "@/integrations/supabase/client";
 
 const CHECKOUT_URL =
-  "https://uxsastmtftysfwjgvkzu.supabase.co/functions/v1/create-checkout";
+  "https://gontbearierzkbyvyubw.supabase.co/functions/v1/create-checkout";
 const ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4c2FzdG10ZnR5c2Z3amd2a3p1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4Mjk2NjcsImV4cCI6MjA4ODQwNTY2N30.UE9NZ-Hh2f3noz12LbbUNiBallPyxEVEhE6FOfvHsWs";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbnRiZWFyaWVyemtieXZ5dWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTE4NTUsImV4cCI6MjA4ODk4Nzg1NX0._k2mjr5frBTbiiTQZUS4ikFA92YmIK-tR0qq_fgamRk";
 
 interface WaiverDialogProps {
   open: boolean;
