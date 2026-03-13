@@ -26,6 +26,7 @@ interface PurchaseRow {
   ticket_type: string;
   quantity: number;
   stripe_session_id: string;
+  referral_code: string | null;
   created_at: string;
 }
 
@@ -188,6 +189,7 @@ const AdminDashboard = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Ticket Type</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Referral Code</TableHead>
                     <TableHead>Waiver Status</TableHead>
                     <TableHead>Signed At</TableHead>
                   </TableRow>
@@ -212,6 +214,9 @@ const AdminDashboard = () => {
                           ) : (
                             <span className="text-xs text-muted-foreground">Attendee</span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {purchase?.referral_code || "--"}
                         </TableCell>
                         <TableCell>
                           {a.waiver_status === "signed" ? (

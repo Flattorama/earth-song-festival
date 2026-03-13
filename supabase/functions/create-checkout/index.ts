@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
       customerName,
       customerPhone,
       customerAddress,
+      referralCode,
     } = await req.json();
 
     const ticket = TICKETS[ticketType];
@@ -89,6 +90,7 @@ Deno.serve(async (req) => {
         attendee_address: (customerAddress || "").trim(),
         ticket_type: ticketType,
         waiver_version: "v1.0_2026-08-07",
+        referral_code: referralCode || null,
       });
 
     if (insertError) {
@@ -126,6 +128,7 @@ Deno.serve(async (req) => {
       metadata: {
         ticket_type: ticketType,
         attendee_name: customerName || "",
+        referralCode: referralCode || "none",
       },
     };
 
