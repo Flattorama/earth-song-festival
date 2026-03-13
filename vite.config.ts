@@ -1,21 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // IMPORTANT: Replace YOUR_REPO_NAME with your actual GitHub repository name.
-  // (If you eventually connect earthsongfestival.com, you can change this back to "/")
-  base: process.env.GITHUB_ACTIONS === "true" ? "/YOUR_REPO_NAME/" : "/",
+  // Custom domains run at the root, so we just use "/"
+  base: "/",
   server: {
     host: "0.0.0.0",
-    port: 5000,
+    port: 8080,
     allowedHosts: true,
     hmr: {
       overlay: false,
     },
   },
-  plugins: [react()].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
