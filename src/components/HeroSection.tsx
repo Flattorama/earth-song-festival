@@ -32,7 +32,7 @@ const HeroSection = () => {
         playsInline
         poster={heroBg}
       >
-        <source src="/Earth Song Fire.mp4" type="video/mp4" />
+        <source src="/EarthSongFire.mp4" type="video/mp4" />
       </video>
       
       {/* Dark Gradient Overlay */}
