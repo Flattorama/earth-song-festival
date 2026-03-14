@@ -280,11 +280,6 @@ const WaiverDialog = ({
                 Referred by {referralFacilitator}
               </p>
             )}
-            {referralStatus === "invalid" && (
-              <p className="text-sm text-muted-foreground">
-                Code not recognized — no worries, you can continue without one.
-              </p>
-            )}
           </div>
 
           <div className="flex items-start gap-3 pt-1">
