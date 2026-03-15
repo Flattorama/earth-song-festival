@@ -15,13 +15,13 @@ const TICKETS: Record<
   "early-bird": {
     name: "Earth Song \u2014 Early Bird Ticket",
     description:
-      "Full day access (9am\u201310pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle",
     amount: 29900,
   },
   "regular-admission": {
     name: "Earth Song \u2014 Regular Admission",
     description:
-      "Full day access (9am\u201310pm), all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering",
     amount: 33300,
   },
   "saturday-day-pass": {
