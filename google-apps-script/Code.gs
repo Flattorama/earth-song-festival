@@ -68,6 +68,19 @@ var TAB_COLUMNS = {
 function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
+    logRawPayload(e.postData.contents);
+
+    // MailerLite new API (connect.mailerlite.com) wraps events in an array
+    if (Array.isArray(payload.events) && payload.events.length > 0) {
+      var results = payload.events.map(function(event) {
+        return processWebhookEvent(event);
+      });
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: "ok", results: results }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Backward compatibility: flat payload format (classic MailerLite API)
     var result = processWebhookEvent(payload);
     return ContentService
       .createTextOutput(JSON.stringify(result))
@@ -218,6 +231,30 @@ function logUnmapped(payload) {
   ]);
 }
 
+/**
+ * Logs raw incoming webhook payload for debugging.
+ * Check the "_Webhook Log" tab to see what MailerLite is actually sending.
+ */
+function logRawPayload(rawContents) {
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var logSheet = ss.getSheetByName("_Webhook Log");
+    if (!logSheet) {
+      logSheet = ss.insertSheet("_Webhook Log");
+      logSheet.appendRow(["Timestamp", "Event Type", "Group ID", "Group Name", "Raw Payload"]);
+    }
+    logSheet.appendRow([
+      new Date().toISOString(),
+      "RAW_INCOMING",
+      "",
+      "",
+      String(rawContents).substring(0, 5000)
+    ]);
+  } catch (e) {
+    // Silently fail — don't let logging break the webhook handler
+  }
+}
+
 function logError(context, error, details) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var logSheet = ss.getSheetByName("_Webhook Log");
@@ -264,4 +301,41 @@ function testWebhook() {
 
   var result = processWebhookEvent(mockPayload);
   Logger.log("Test result: " + JSON.stringify(result));
+}
+
+/**
+ * Tests the wrapped events-array format used by MailerLite's new API.
+ * Run this from the Apps Script editor to verify the fix works.
+ */
+function testWebhookWrapped() {
+  var mockPayload = {
+    events: [
+      {
+        type: "subscriber.added_to_group",
+        fired_at: "2026-03-17T00:00:00.000000Z",
+        data: {
+          subscriber: {
+            email: "test-wrapped@example.com",
+            source: "api",
+            fields: {
+              name: "Wrapped",
+              last_name: "Test"
+            }
+          },
+          group: {
+            id: "180087495434187685",
+            name: "Earth Song Festival Web Sign Ups"
+          }
+        }
+      }
+    ]
+  };
+
+  // Simulate what doPost now does
+  if (Array.isArray(mockPayload.events)) {
+    mockPayload.events.forEach(function(event) {
+      var result = processWebhookEvent(event);
+      Logger.log("Wrapped test result: " + JSON.stringify(result));
+    });
+  }
 }
