@@ -49,12 +49,15 @@ var TAB_COLUMNS = {
     "Source"
   ],
   "Volunteer Applications": [
-    "Timestamp",
+    "ID",
+    "Full Name",
     "Email",
-    "First Name",
-    "Last Name",
     "Phone",
-    "Source"
+    "About",
+    "Availability",
+    "Experience",
+    "Why Earth Song",
+    "Applied At"
   ]
 };
 
@@ -130,17 +133,29 @@ function processWebhookEvent(payload) {
   var source = subscriber.source || "mailerlite_form";
   var timestamp = new Date().toISOString();
 
+  // Deduplicate: skip if this email was already written to this tab recently
+  if (isDuplicateEntry(tabName, email)) {
+    return { status: "skipped", reason: "duplicate", tab: tabName, email: email };
+  }
+
   // Build the row based on the tab's column config
   var columns = TAB_COLUMNS[tabName] || ["Timestamp", "Email", "First Name", "Last Name", "Source"];
   var row = columns.map(function(col) {
     switch (col) {
-      case "Timestamp":  return timestamp;
-      case "Email":      return email;
-      case "First Name": return firstName;
-      case "Last Name":  return lastName;
-      case "Phone":      return phone;
-      case "Source":     return source;
-      default:           return fields[col.toLowerCase().replace(/ /g, "_")] || "";
+      case "ID":               return subscriber.id || "";
+      case "Timestamp":        return timestamp;
+      case "Email":            return email;
+      case "Full Name":        return ((firstName + " " + lastName).trim()) || fields.full_name || "";
+      case "First Name":       return firstName;
+      case "Last Name":        return lastName;
+      case "Phone":            return phone;
+      case "About":            return fields.about || "";
+      case "Availability":     return fields.availability || "";
+      case "Experience":       return fields.experience || "";
+      case "Why Earth Song":   return fields.why_earth_song || "";
+      case "Applied At":       return timestamp;
+      case "Source":           return source;
+      default:                 return fields[col.toLowerCase().replace(/ /g, "_")] || "";
     }
   });
 
@@ -189,6 +204,51 @@ function resolveTabName(group, eventType, subscriber) {
 // ---------------------------------------------------------------------------
 // Google Sheets Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Checks if this email was already written to the given tab within the last
+ * 60 seconds, to prevent duplicate rows from multiple MailerLite webhook
+ * events fired for a single form submission.
+ */
+function isDuplicateEntry(tabName, email) {
+  if (!email) return false;
+
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(tabName);
+  if (!sheet || sheet.getLastRow() < 2) return false;
+
+  var columns = TAB_COLUMNS[tabName] || [];
+  var emailColIndex = columns.indexOf("Email") + 1; // 1-based
+  if (emailColIndex < 1) return false;
+
+  // Check the last 10 rows for a recent duplicate
+  var lastRow = sheet.getLastRow();
+  var startRow = Math.max(2, lastRow - 9);
+  var numRows = lastRow - startRow + 1;
+  var range = sheet.getRange(startRow, 1, numRows, columns.length);
+  var values = range.getValues();
+
+  // Find timestamp/applied-at column for time comparison
+  var timeColIndex = columns.indexOf("Applied At");
+  if (timeColIndex === -1) timeColIndex = columns.indexOf("Timestamp");
+
+  var now = new Date();
+  var cutoff = new Date(now.getTime() - 60 * 1000); // 60 seconds ago
+
+  for (var i = values.length - 1; i >= 0; i--) {
+    if (String(values[i][emailColIndex - 1]).toLowerCase() === email.toLowerCase()) {
+      // If we have a timestamp column, check recency
+      if (timeColIndex >= 0) {
+        var rowTime = new Date(values[i][timeColIndex]);
+        if (rowTime >= cutoff) return true;
+      } else {
+        // No timestamp column — just check email match in recent rows
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 function appendRow(tabName, row) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -285,12 +345,17 @@ function testWebhook() {
   var mockPayload = {
     type: "subscriber.added_to_group",
     subscriber: {
+      id: "test-123",
       email: "test@example.com",
-      source: "api",
+      source: "webform",
       fields: {
         name: "Test",
         last_name: "User",
-        phone: "555-0100"
+        phone: "555-0100",
+        about: "I love nature and music festivals.",
+        availability: "Available August 7-9, 2026",
+        experience: "Volunteered at Burning Man 2024",
+        why_earth_song: "The mission resonates with my values."
       }
     },
     group: {
@@ -315,11 +380,17 @@ function testWebhookWrapped() {
         fired_at: "2026-03-17T00:00:00.000000Z",
         data: {
           subscriber: {
+            id: "test-wrapped-456",
             email: "test-wrapped@example.com",
-            source: "api",
+            source: "webform",
             fields: {
               name: "Wrapped",
-              last_name: "Test"
+              last_name: "Test",
+              phone: "555-0200",
+              about: "I am a test volunteer.",
+              availability: "All weekend",
+              experience: "Festival volunteering",
+              why_earth_song: "Testing the integration"
             }
           },
           group: {
