@@ -122,26 +122,12 @@ else:
 " 2>/dev/null || echo "${result}"
 echo ""
 
-# Webhook for: new subscriber created (catches direct API additions)
-echo "Creating webhook for subscriber.create..."
-result=$(curl -s -X POST "${API_BASE}/webhooks" \
-  -H "${AUTH_HEADER}" \
-  -H "${CONTENT_TYPE}" \
-  -d "{
-    \"url\": \"${APPS_SCRIPT_URL}\",
-    \"events\": [\"subscriber.create\"]
-  }")
-
-echo "${result}" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-if 'data' in data:
-    print(f\"  Created webhook ID: {data['data']['id']}\")
-    print(f\"  URL: {data['data']['url']}\")
-    print(f\"  Events: {', '.join(data['data'].get('events', []))}\")
-else:
-    print(f\"  Response: {json.dumps(data, indent=2)}\")
-" 2>/dev/null || echo "${result}"
+# NOTE: We intentionally do NOT register a separate subscriber.create webhook.
+# When a subscriber fills out a form, MailerLite fires both subscriber.create
+# AND subscriber.added_to_group, which causes duplicate rows in the sheet.
+# The subscriber.added_to_group event alone is sufficient — it fires for both
+# form signups and direct API additions that include a group.
+echo "Skipping subscriber.create webhook (would cause duplicate entries)."
 echo ""
 
 # ---------------------------------------------------------------------------
