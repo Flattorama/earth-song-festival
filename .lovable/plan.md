@@ -1,90 +1,35 @@
 
 
-# Earth Song Festival Retreat - Landing Page Plan
+# Plan: Enable Klarna/Afterpay BNPL + Fix Build Errors
 
-## Overview
-A nature-inspired, ceremonial single-page website for the Earth Song Festival Retreat (August 8, 2026). The design will feel grounded, warm, and connected to fire/earth elements with elegant typography and generous whitespace.
+## Problem
+1. The user wants Klarna/Afterpay BNPL enabled at checkout (2 small code changes).
+2. There are existing build errors in `WaiverDialog.tsx` because the generated `types.ts` has no tables defined (all `[_ in never]: never`), so querying `"referral_codes"` fails at the type level.
 
----
+## Changes
 
-## Design System
+### 1. Fix build error in WaiverDialog.tsx
+The Supabase types file shows no tables, causing the `supabase.from("referral_codes")` call to fail type-checking. Will add a type assertion (`as any`) on the `.from()` call to bypass the generated types, matching the pattern already used in other files (AdminDashboard, PaymentSuccess, SignWaiver).
 
-**Colors:**
-- Deep Burgundy (#6B2D3D) - Primary buttons, headings
-- Warm Cream (#FAF7F2) - Backgrounds
-- Burnt Orange (#C4713B) - Hover states, accents
-- Deep Forest (#1C2B1F) - Dark section backgrounds
-- Soft Gold (#D4A853) - Decorative accents
-- Charcoal (#2D2D2D) - Body text
+**File:** `src/components/WaiverDialog.tsx` (~line 73)
 
-**Typography:**
-- Cormorant Garamond for elegant serif headings
-- Inter for clean sans-serif body text
-- Letter-spaced small caps for section labels
+### 2. Add BNPL config to create-checkout edge function
+Add two keys to `sessionParams`:
+- `payment_method_configuration: "pmc_1THRrA9YdWVK7v3DXseZCFL2"`
+- `automatic_payment_methods: { enabled: true }`
 
----
+**File:** `supabase/functions/create-checkout/index.ts` (~line 125, after `mode: "payment"`)
 
-## Sections to Build
+### 3. Add installment copy below ticket CTA button
+Add one `<p>` tag after the `<Button>` in TicketsSection.tsx (~line 157):
+```
+<p className="text-sm text-center mt-2 opacity-70">
+  Pay in installments available at checkout via Klarna or Afterpay
+</p>
+```
 
-### 1. Sticky Navigation
-Fixed header that starts transparent and becomes cream-colored on scroll. "EARTH SONG" text logo on the left, with anchor links for: The Gathering, What to Expect, Tickets, FAQ. Mobile hamburger menu with slide-out drawer.
+**File:** `src/components/TicketsSection.tsx`
 
-### 2. Hero Section
-Full-viewport height with atmospheric nature/fire background image and dark gradient overlay. Contains:
-- "A CEREMONIAL GATHERING" pre-headline
-- Large "EARTH SONG Festival Retreat" title
-- Date & location (August 8, 2026 | Still Life Retreat & Lake)
-- Italic tagline
-- "Secure Your Spot" CTA button
-- Subtle badges: "Alcohol-Free • Leave No Trace • Limited Capacity"
-
-### 3. Email Capture Section
-Cream background with centered content. Includes:
-- "Join the Circle" heading
-- Welcoming subtext about receiving updates
-- First name + email input fields
-- "Join the Gathering" submit button
-- Privacy note beneath
-
-### 4. What to Expect Section
-Deep forest green background with cream text. Features a grid of 6 feature cards with icons:
-- Opening & Closing Ceremony
-- Live Music & Performance
-- Embodied Workshops
-- Fire Circle Gathering
-- Nourishing Food
-- Nature Immersion
-
-### 5. Tickets Section
-Cream background with two pricing cards side-by-side:
-- Early Bird tier with placeholder price and feature list
-- Regular Admission tier with placeholder price and feature list
-- Capacity notice and payment info beneath
-
-### 6. Footer
-Deep forest background with three columns:
-- Brand info (Earth Song, location, date)
-- Quick navigation links
-- Connect section with email signup and social placeholder
-
----
-
-## Key Features
-
-✓ Mobile-first responsive design  
-✓ Smooth scroll navigation with header offset  
-✓ Beautiful placeholder nature/fire imagery  
-✓ Rounded corners and subtle shadows for depth  
-✓ Forms styled but not yet connected to backend  
-✓ Hover effects on buttons and cards
-
----
-
-## Future Additions (Phase 2)
-- The Gathering (About) section with two-column layout
-- Facilitators grid with circular headshots
-- Volunteer application form
-- FAQ accordion section
-- Partners logo row
-- Backend integration for forms
+## What stays untouched
+- All other edge functions, migrations, types.ts, App.tsx, waiver modal logic, waiver insert block, Early Bird expiry check.
 
