@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      waiver_acceptances: {
+        Row: {
+          attendee_address: string | null
+          attendee_email: string
+          attendee_name: string
+          attendee_phone: string | null
+          created_at: string
+          id: string
+          referral_code: string | null
+          ticket_type: string
+          waiver_version: string
+        }
+        Insert: {
+          attendee_address?: string | null
+          attendee_email: string
+          attendee_name: string
+          attendee_phone?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string | null
+          ticket_type: string
+          waiver_version: string
+        }
+        Update: {
+          attendee_address?: string | null
+          attendee_email?: string
+          attendee_name?: string
+          attendee_phone?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string | null
+          ticket_type?: string
+          waiver_version?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
