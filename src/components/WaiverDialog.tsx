@@ -16,9 +16,9 @@ import WaiverContent from "./WaiverContent";
 import { supabase } from "@/integrations/supabase/client";
 
 const CHECKOUT_URL =
-  "https://gontbearierzkbyvyubw.supabase.co/functions/v1/create-checkout";
+  `https://ofkhgfewjpfxctxwdkky.supabase.co/functions/v1/create-checkout`;
 const ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbnRiZWFyaWVyemtieXZ5dWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTE4NTUsImV4cCI6MjA4ODk4Nzg1NX0._k2mjr5frBTbiiTQZUS4ikFA92YmIK-tR0qq_fgamRk";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ma2hnZmV3anBmeGN0eHdka2t5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0ODY4MDgsImV4cCI6MjA4ODA2MjgwOH0.o3NcKMqE1SgrLYhbyI_ctFpQCH_WqxX2k2sZ0Kkxg64";
 
 interface WaiverDialogProps {
   open: boolean;
@@ -69,7 +69,7 @@ const WaiverDialog = ({
       return;
     }
     setReferralStatus("validating");
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("referral_codes")
       .select("facilitator_name")
       .eq("code", trimmed)
@@ -278,11 +278,6 @@ const WaiverDialog = ({
               <p className="text-sm text-accent flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4" />
                 Referred by {referralFacilitator}
-              </p>
-            )}
-            {referralStatus === "invalid" && (
-              <p className="text-sm text-muted-foreground">
-                Code not recognized — no worries, you can continue without one.
               </p>
             )}
           </div>
