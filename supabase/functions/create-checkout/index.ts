@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
         },
       ],
       mode: "payment",
+      payment_method_configuration: "pmc_1THRrA9YdWVK7v3DXseZCFL2",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#tickets`,
       metadata: {
