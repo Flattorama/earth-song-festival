@@ -155,6 +155,9 @@ const TicketsSection = () => {
                 >
                   {tier.cta}
                 </Button>
+                <p className="text-sm text-center mt-2 opacity-70">
+                  Pay in installments available at checkout via Klarna or Afterpay
+                </p>
               </CardContent>
             </Card>
           ))}

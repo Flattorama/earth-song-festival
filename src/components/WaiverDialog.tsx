@@ -69,7 +69,7 @@ const WaiverDialog = ({
       return;
     }
     setReferralStatus("validating");
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("referral_codes")
       .select("facilitator_name")
       .eq("code", trimmed)
