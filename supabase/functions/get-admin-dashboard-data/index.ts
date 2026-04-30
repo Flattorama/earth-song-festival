@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Content-Type, Authorization, X-Client-Info, Apikey",
+    "Content-Type, Authorization, X-Client-Info, Apikey, X-Admin-Token",
 };
 
 Deno.serve(async (req) => {
@@ -15,6 +15,15 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const adminToken = Deno.env.get("ADMIN_DASHBOARD_TOKEN");
+    const providedToken = req.headers.get("x-admin-token");
+
+    if (!adminToken || providedToken !== adminToken) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return new Response(JSON.stringify({ error: "Supabase is not configured" }), {
