@@ -14,15 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendees: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_buyer: boolean
+          name: string
+          phone: string | null
+          purchase_id: string
+          waiver_ip_address: string | null
+          waiver_signed_at: string | null
+          waiver_status: string
+          waiver_token: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_buyer?: boolean
+          name: string
+          phone?: string | null
+          purchase_id: string
+          waiver_ip_address?: string | null
+          waiver_signed_at?: string | null
+          waiver_status?: string
+          waiver_token?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_buyer?: boolean
+          name?: string
+          phone?: string | null
+          purchase_id?: string
+          waiver_ip_address?: string | null
+          waiver_signed_at?: string | null
+          waiver_status?: string
+          waiver_token?: string | null
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          buyer_email: string
+          buyer_name: string
+          created_at: string
+          id: string
+          quantity: number
+          referral_code: string | null
+          stripe_session_id: string
+          ticket_type: string
+        }
+        Insert: {
+          buyer_email: string
+          buyer_name: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          referral_code?: string | null
+          stripe_session_id: string
+          ticket_type: string
+        }
+        Update: {
+          buyer_email?: string
+          buyer_name?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          referral_code?: string | null
+          stripe_session_id?: string
+          ticket_type?: string
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          facilitator_email: string | null
+          facilitator_name: string
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          facilitator_email?: string | null
+          facilitator_name: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          facilitator_email?: string | null
+          facilitator_name?: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
+      stripe_orders: {
+        Row: {
+          amount_subtotal: number
+          amount_total: number
+          checkout_session_id: string
+          created_at: string
+          currency: string
+          customer_id: string
+          deleted_at: string | null
+          id: number
+          payment_intent_id: string | null
+          payment_status: string
+          status: "pending" | "completed" | "canceled"
+          updated_at: string
+        }
+        Insert: {
+          amount_subtotal: number
+          amount_total: number
+          checkout_session_id: string
+          created_at?: string
+          currency: string
+          customer_id: string
+          deleted_at?: string | null
+          id?: number
+          payment_intent_id?: string | null
+          payment_status: string
+          status?: "pending" | "completed" | "canceled"
+          updated_at?: string
+        }
+        Update: {
+          amount_subtotal?: number
+          amount_total?: number
+          checkout_session_id?: string
+          created_at?: string
+          currency?: string
+          customer_id?: string
+          deleted_at?: string | null
+          id?: number
+          payment_intent_id?: string | null
+          payment_status?: string
+          status?: "pending" | "completed" | "canceled"
+          updated_at?: string
+        }
+        Relationships: []
+      }
       waiver_acceptances: {
         Row: {
           attendee_address: string | null
           attendee_email: string
           attendee_name: string
           attendee_phone: string | null
+          accepted_at: string | null
           created_at: string
           id: string
+          ip_address: string | null
           referral_code: string | null
+          stripe_session_id: string | null
           ticket_type: string
           waiver_version: string
         }
@@ -31,9 +181,12 @@ export type Database = {
           attendee_email: string
           attendee_name: string
           attendee_phone?: string | null
+          accepted_at?: string | null
           created_at?: string
           id?: string
+          ip_address?: string | null
           referral_code?: string | null
+          stripe_session_id?: string | null
           ticket_type: string
           waiver_version: string
         }
@@ -42,9 +195,12 @@ export type Database = {
           attendee_email?: string
           attendee_name?: string
           attendee_phone?: string | null
+          accepted_at?: string | null
           created_at?: string
           id?: string
+          ip_address?: string | null
           referral_code?: string | null
+          stripe_session_id?: string | null
           ticket_type?: string
           waiver_version?: string
         }

@@ -4,36 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import WaiverDialog from "./WaiverDialog";
 
-const EARLY_BIRD_CUTOFF = new Date("2026-05-02T03:59:59Z");
+const EARLY_BIRD_CUTOFF = new Date("2026-05-06T03:59:59Z");
 
 const ticketTiers = [
   {
     name: "Early Bird",
     price: "CA$299",
     originalPrice: "CA$333",
-    description: "Limited availability – secure your spot at a special rate",
+    description: "Adult (+ babies in arms) — limited availability at a special rate",
     features: [
       "Full weekend access (Fri–Sun)",
       "All ceremonies & workshops",
       "Live music & performances",
       "Fire circle gathering",
       "Welcome gift bundle",
+      "Babies in arms attend free",
     ],
     popular: true,
     cta: "Reserve Early Bird",
     ticketType: "early-bird",
-    expiryNotice: "Available until May 1, 2026 at 11:59 PM EST",
+    expiryNotice: "Available until May 5, 2026 at 11:59 PM EST",
   },
   {
     name: "Regular Admission",
     price: "CA$333",
     originalPrice: null,
-    description: "Standard admission to the full Earth Song experience",
+    description: "Adult (+ babies in arms) — standard admission to the full Earth Song experience",
     features: [
       "Full weekend access (Fri–Sun)",
       "All ceremonies & workshops",
       "Live music & performances",
       "Fire circle gathering",
+      "Babies in arms attend free",
     ],
     popular: false,
     cta: "Get Tickets",

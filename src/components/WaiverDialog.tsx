@@ -15,11 +15,6 @@ import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
 import { supabase } from "@/integrations/supabase/client";
 
-const CHECKOUT_URL =
-  "https://gontbearierzkbyvyubw.supabase.co/functions/v1/create-checkout";
-const ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbnRiZWFyaWVyemtieXZ5dWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTE4NTUsImV4cCI6MjA4ODk4Nzg1NX0._k2mjr5frBTbiiTQZUS4ikFA92YmIK-tR0qq_fgamRk";
-
 interface WaiverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,6 +47,8 @@ const WaiverDialog = ({
   const canSubmit =
     name.trim() !== "" &&
     email.trim() !== "" &&
+    section1Checked &&
+    section2Checked &&
     agreed;
 
   const handleScroll = useCallback(() => {
@@ -69,7 +66,7 @@ const WaiverDialog = ({
       return;
     }
     setReferralStatus("validating");
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("referral_codes")
       .select("facilitator_name")
       .eq("code", trimmed)
@@ -97,34 +94,30 @@ const WaiverDialog = ({
     setLoading(true);
 
     try {
-      const res = await fetch(CHECKOUT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ANON_KEY}`,
-          apikey: ANON_KEY,
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
           ticketType,
           customerEmail: email.trim(),
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerAddress: address.trim(),
           referralCode: referralStatus === "valid" ? referralCode.trim().toUpperCase() : undefined,
-        }),
+        },
       });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result?.error || `Server error (${res.status})`);
+      if (error) {
+        throw new Error(
+          data && typeof data === "object" && "error" in data
+            ? String(data.error)
+            : error.message
+        );
       }
 
-      if (!result?.url) {
+      if (!data?.url) {
         throw new Error("No checkout URL returned");
       }
 
-      window.location.href = result.url;
+      window.location.href = data.url;
     } catch (err: unknown) {
       console.error("Waiver/checkout error:", err);
       const message =

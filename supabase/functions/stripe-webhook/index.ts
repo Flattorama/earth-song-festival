@@ -39,17 +39,19 @@ Deno.serve(async (req) => {
 
     try {
       event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
-    } catch (error: any) {
-      console.error(`Webhook signature verification failed: ${error.message}`);
-      return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Webhook signature verification failed: ${message}`);
+      return new Response(`Webhook signature verification failed: ${message}`, { status: 400 });
     }
 
     EdgeRuntime.waitUntil(handleEvent(event));
 
     return Response.json({ received: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing webhook:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: message }, { status: 500 });
   }
 });
 
@@ -84,23 +86,22 @@ async function handleEvent(event: Stripe.Event) {
       console.info(`Processing ${isSubscription ? 'subscription' : 'one-time payment'} checkout session`);
     }
 
-    const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
+    const session = stripeData as Stripe.Checkout.Session;
+    const { mode, payment_status } = session;
 
     if (isSubscription) {
       console.info(`Starting subscription sync for customer: ${customerId}`);
       await syncCustomerFromStripe(customerId);
     } else if (mode === 'payment' && payment_status === 'paid') {
       try {
-        // Extract the necessary information from the session
         const {
           id: checkout_session_id,
           payment_intent,
           amount_subtotal,
           amount_total,
           currency,
-        } = stripeData as Stripe.Checkout.Session;
+        } = session;
 
-        // Insert the order into the stripe_orders table
         const { error: orderError } = await supabase.from('stripe_orders').insert({
           checkout_session_id,
           payment_intent_id: payment_intent,
@@ -109,18 +110,88 @@ async function handleEvent(event: Stripe.Event) {
           amount_total,
           currency,
           payment_status,
-          status: 'completed', // assuming we want to mark it as completed since payment is successful
+          status: 'completed',
         });
 
         if (orderError) {
           console.error('Error inserting order:', orderError);
           return;
         }
+        await upsertPurchaseFromSession(session);
         console.info(`Successfully processed one-time payment for session: ${checkout_session_id}`);
       } catch (error) {
         console.error('Error processing one-time payment:', error);
       }
     }
+  }
+}
+
+async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
+  const metadata = session.metadata ?? {};
+  const ticketType = metadata.ticket_type;
+
+  if (!ticketType) {
+    console.warn(`Checkout session ${session.id} is missing ticket_type metadata`);
+    return;
+  }
+
+  const buyerEmail = metadata.attendee_email || session.customer_details?.email || "";
+  const buyerName = metadata.attendee_name || session.customer_details?.name || "";
+
+  const { error: purchaseError } = await supabase.from('purchases').upsert(
+    {
+      stripe_session_id: session.id,
+      buyer_name: buyerName,
+      buyer_email: buyerEmail,
+      ticket_type: ticketType,
+      quantity: 1,
+      referral_code: metadata.referral_code === "none" ? null : metadata.referral_code,
+    },
+    { onConflict: 'stripe_session_id' },
+  );
+
+  if (purchaseError) {
+    console.error('Error upserting purchase:', purchaseError);
+    return;
+  }
+
+  const { data: purchase, error: getPurchaseError } = await supabase
+    .from('purchases')
+    .select('id')
+    .eq('stripe_session_id', session.id)
+    .maybeSingle();
+
+  if (getPurchaseError || !purchase) {
+    console.error('Error loading purchase:', getPurchaseError);
+    return;
+  }
+
+  const { error: attendeeError } = await supabase.from('attendees').upsert(
+    {
+      purchase_id: purchase.id,
+      name: buyerName,
+      email: buyerEmail,
+      phone: metadata.attendee_phone || "",
+      is_buyer: true,
+      waiver_status: 'signed',
+      waiver_signed_at: new Date().toISOString(),
+    },
+    { onConflict: 'purchase_id,email' },
+  );
+
+  if (attendeeError) {
+    console.error('Error upserting attendee:', attendeeError);
+  }
+
+  const { error: waiverError } = await supabase
+    .from('waiver_acceptances')
+    .update({ stripe_session_id: session.id })
+    .eq('attendee_email', buyerEmail)
+    .eq('ticket_type', ticketType)
+    .is('stripe_session_id', null);
+
+  if (waiverError) {
+    console.error('Error linking waiver acceptance:', waiverError);
   }
 }
 

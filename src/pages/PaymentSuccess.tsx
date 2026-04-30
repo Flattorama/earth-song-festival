@@ -15,10 +15,27 @@ interface Purchase {
   quantity: number;
 }
 
+interface PurchaseResponse {
+  purchase: Purchase | null;
+  error?: string;
+}
+
 interface AttendeeForm {
   name: string;
   email: string;
   phone: string;
+}
+
+interface WaiverEmailRecipient {
+  id: string;
+  name: string;
+  email: string;
+  waiver_token: string | null;
+}
+
+interface SubmitAttendeesResponse {
+  attendees: WaiverEmailRecipient[];
+  error?: string;
 }
 
 const PaymentSuccess = () => {
@@ -38,21 +55,22 @@ const PaymentSuccess = () => {
     }
 
     const fetchPurchase = async () => {
-      const { data, error } = await (supabase as any)
-        .from("purchases")
-        .select("id, buyer_name, buyer_email, ticket_type, quantity")
-        .eq("stripe_session_id", sessionId)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke<PurchaseResponse>(
+        "get-purchase",
+        {
+          body: { sessionId },
+        }
+      );
 
-      if (error) {
+      if (error || data?.error) {
         console.error("Failed to load purchase:", error);
       }
 
-      if (data) {
-        setPurchase(data);
-        if (data.quantity > 1) {
+      if (data?.purchase) {
+        setPurchase(data.purchase);
+        if (data.purchase.quantity > 1) {
           setAttendees(
-            Array.from({ length: data.quantity - 1 }, () => ({
+            Array.from({ length: data.purchase.quantity - 1 }, () => ({
               name: "",
               email: "",
               phone: "",
@@ -81,16 +99,6 @@ const PaymentSuccess = () => {
     setSubmitting(true);
 
     try {
-      const buyerRow = {
-        purchase_id: purchase.id,
-        name: purchase.buyer_name,
-        email: purchase.buyer_email,
-        phone: "",
-        is_buyer: true,
-        waiver_status: "signed",
-        waiver_signed_at: new Date().toISOString(),
-      };
-
       const additionalRows = attendees.map((a) => ({
         purchase_id: purchase.id,
         name: a.name.trim(),
@@ -100,22 +108,23 @@ const PaymentSuccess = () => {
         waiver_status: "pending",
       }));
 
-      const { error: insertError } = await (supabase as any)
-        .from("attendees")
-        .insert([buyerRow, ...additionalRows]);
+      const { data: submitData, error: insertError } =
+        await supabase.functions.invoke<SubmitAttendeesResponse>("submit-attendees", {
+          body: {
+            purchaseId: purchase.id,
+            attendees: additionalRows,
+          },
+        });
 
-      if (insertError) throw insertError;
+      if (insertError || submitData?.error) {
+        throw new Error(submitData?.error || insertError?.message || "Unable to save attendees");
+      }
 
-      const { data: inserted } = await (supabase as any)
-        .from("attendees")
-        .select("id, name, email, waiver_token")
-        .eq("purchase_id", purchase.id)
-        .eq("is_buyer", false);
-
+      const inserted = submitData?.attendees;
       if (inserted && inserted.length > 0) {
         await supabase.functions.invoke("send-waiver-emails", {
           body: {
-            attendees: inserted.map((att: any) => ({
+            attendees: inserted.map((att) => ({
               name: att.name,
               email: att.email,
               waiver_token: att.waiver_token,
@@ -134,34 +143,6 @@ const PaymentSuccess = () => {
       setSubmitting(false);
     }
   };
-
-  const handleSingleTicketMount = async () => {
-    if (!purchase) return;
-    const { data: existing } = await (supabase as any)
-      .from("attendees")
-      .select("id")
-      .eq("purchase_id", purchase.id)
-      .limit(1);
-
-    if (existing && existing.length > 0) return;
-
-    await (supabase as any).from("attendees").insert({
-      purchase_id: purchase.id,
-      name: purchase.buyer_name,
-      email: purchase.buyer_email,
-      phone: "",
-      is_buyer: true,
-      waiver_status: "signed",
-      waiver_signed_at: new Date().toISOString(),
-    });
-  };
-
-  useEffect(() => {
-    if (purchase && purchase.quantity === 1) {
-      handleSingleTicketMount();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [purchase]);
 
   if (loading) {
     return (

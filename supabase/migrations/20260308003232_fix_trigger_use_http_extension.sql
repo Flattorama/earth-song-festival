@@ -20,7 +20,7 @@ BEGIN
 
   BEGIN
     PERFORM extensions.http_post(
-      'https://gontbearierzkbyvyubw.supabase.co/functions/v1/google-sheets-sync',
+      'https://bdkaqgvzjkixwakzploq.supabase.co/functions/v1/google-sheets-sync',
       payload::text,
       'application/json'
     );
