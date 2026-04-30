@@ -21,6 +21,13 @@ interface AttendeeForm {
   phone: string;
 }
 
+interface WaiverEmailRecipient {
+  id: string;
+  name: string;
+  email: string;
+  waiver_token: string | null;
+}
+
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -38,7 +45,7 @@ const PaymentSuccess = () => {
     }
 
     const fetchPurchase = async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("purchases")
         .select("id, buyer_name, buyer_email, ticket_type, quantity")
         .eq("stripe_session_id", sessionId)
@@ -100,13 +107,13 @@ const PaymentSuccess = () => {
         waiver_status: "pending",
       }));
 
-      const { error: insertError } = await (supabase as any)
+      const { error: insertError } = await supabase
         .from("attendees")
         .insert([buyerRow, ...additionalRows]);
 
       if (insertError) throw insertError;
 
-      const { data: inserted } = await (supabase as any)
+      const { data: inserted } = await supabase
         .from("attendees")
         .select("id, name, email, waiver_token")
         .eq("purchase_id", purchase.id)
@@ -115,7 +122,7 @@ const PaymentSuccess = () => {
       if (inserted && inserted.length > 0) {
         await supabase.functions.invoke("send-waiver-emails", {
           body: {
-            attendees: inserted.map((att: any) => ({
+            attendees: (inserted as WaiverEmailRecipient[]).map((att) => ({
               name: att.name,
               email: att.email,
               waiver_token: att.waiver_token,
@@ -137,7 +144,7 @@ const PaymentSuccess = () => {
 
   const handleSingleTicketMount = async () => {
     if (!purchase) return;
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from("attendees")
       .select("id")
       .eq("purchase_id", purchase.id)
@@ -145,7 +152,7 @@ const PaymentSuccess = () => {
 
     if (existing && existing.length > 0) return;
 
-    await (supabase as any).from("attendees").insert({
+    await supabase.from("attendees").insert({
       purchase_id: purchase.id,
       name: purchase.buyer_name,
       email: purchase.buyer_email,

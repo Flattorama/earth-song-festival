@@ -62,7 +62,7 @@ const SignWaiver = () => {
     }
 
     const fetchAttendee = async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("attendees")
         .select("id, name, email, phone, waiver_status")
         .eq("waiver_token", token)
@@ -98,7 +98,7 @@ const SignWaiver = () => {
     setSubmitting(true);
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("attendees")
         .update({
           name: legalName.trim(),

@@ -46,11 +46,11 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     const [attendeesRes, purchasesRes] = await Promise.all([
-      (supabase as any)
+      supabase
         .from("attendees")
         .select("*")
         .order("created_at", { ascending: false }),
-      (supabase as any)
+      supabase
         .from("purchases")
         .select("*")
         .order("created_at", { ascending: false }),
