@@ -144,34 +144,6 @@ const PaymentSuccess = () => {
     }
   };
 
-  const handleSingleTicketMount = async () => {
-    if (!purchase) return;
-    const { data: existing } = await supabase
-      .from("attendees")
-      .select("id")
-      .eq("purchase_id", purchase.id)
-      .limit(1);
-
-    if (existing && existing.length > 0) return;
-
-    await supabase.from("attendees").insert({
-      purchase_id: purchase.id,
-      name: purchase.buyer_name,
-      email: purchase.buyer_email,
-      phone: "",
-      is_buyer: true,
-      waiver_status: "signed",
-      waiver_signed_at: new Date().toISOString(),
-    });
-  };
-
-  useEffect(() => {
-    if (purchase && purchase.quantity === 1) {
-      handleSingleTicketMount();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [purchase]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

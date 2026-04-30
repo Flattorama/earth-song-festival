@@ -30,6 +30,12 @@ interface PurchaseRow {
   created_at: string;
 }
 
+interface AdminDashboardResponse {
+  attendees?: AttendeeRow[];
+  purchases?: PurchaseRow[];
+  error?: string;
+}
+
 const TICKET_LABELS: Record<string, string> = {
   "early-bird": "Early Bird",
   "regular-admission": "Regular",
@@ -45,19 +51,16 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [attendeesRes, purchasesRes] = await Promise.all([
-      supabase
-        .from("attendees")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("purchases")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
+    const { data, error } = await supabase.functions.invoke<AdminDashboardResponse>(
+      "get-admin-dashboard-data"
+    );
 
-    if (attendeesRes.data) setAttendees(attendeesRes.data);
-    if (purchasesRes.data) setPurchases(purchasesRes.data);
+    if (error || data?.error) {
+      console.error("Failed to load admin dashboard:", data?.error || error);
+    } else {
+      setAttendees(data?.attendees || []);
+      setPurchases(data?.purchases || []);
+    }
     setLoading(false);
   };
 
