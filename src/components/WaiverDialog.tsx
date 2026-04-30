@@ -33,8 +33,6 @@ const WaiverDialog = ({
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [section1Checked, setSection1Checked] = useState(false);
-  const [section2Checked, setSection2Checked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [referralCode, setReferralCode] = useState("");
@@ -44,12 +42,7 @@ const WaiverDialog = ({
   const [referralFacilitator, setReferralFacilitator] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const canSubmit =
-    name.trim() !== "" &&
-    email.trim() !== "" &&
-    section1Checked &&
-    section2Checked &&
-    agreed;
+  const canSubmit = name.trim() !== "" && email.trim() !== "" && agreed;
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -136,8 +129,6 @@ const WaiverDialog = ({
     setPhone("");
     setAddress("");
     setAgreed(false);
-    setSection1Checked(false);
-    setSection2Checked(false);
     setShowScrollHint(true);
     setReferralCode("");
     setReferralStatus("idle");
@@ -172,13 +163,7 @@ const WaiverDialog = ({
           className="flex-1 overflow-y-auto overscroll-contain px-6 pt-4 pb-2 relative"
           style={{ WebkitOverflowScrolling: "touch", maxHeight: "400px" }}
         >
-          <WaiverContent
-            showCheckboxes
-            section1Checked={section1Checked}
-            onSection1Change={setSection1Checked}
-            section2Checked={section2Checked}
-            onSection2Change={setSection2Checked}
-          />
+          <WaiverContent />
           <div className="h-4" />
           {/* Bottom fade gradient */}
           {showScrollHint && (
