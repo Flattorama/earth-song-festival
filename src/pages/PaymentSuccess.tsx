@@ -15,6 +15,11 @@ interface Purchase {
   quantity: number;
 }
 
+interface PurchaseResponse {
+  purchase: Purchase | null;
+  error?: string;
+}
+
 interface AttendeeForm {
   name: string;
   email: string;
@@ -26,6 +31,11 @@ interface WaiverEmailRecipient {
   name: string;
   email: string;
   waiver_token: string | null;
+}
+
+interface SubmitAttendeesResponse {
+  attendees: WaiverEmailRecipient[];
+  error?: string;
 }
 
 const PaymentSuccess = () => {
@@ -45,21 +55,22 @@ const PaymentSuccess = () => {
     }
 
     const fetchPurchase = async () => {
-      const { data, error } = await supabase
-        .from("purchases")
-        .select("id, buyer_name, buyer_email, ticket_type, quantity")
-        .eq("stripe_session_id", sessionId)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke<PurchaseResponse>(
+        "get-purchase",
+        {
+          body: { sessionId },
+        }
+      );
 
-      if (error) {
+      if (error || data?.error) {
         console.error("Failed to load purchase:", error);
       }
 
-      if (data) {
-        setPurchase(data);
-        if (data.quantity > 1) {
+      if (data?.purchase) {
+        setPurchase(data.purchase);
+        if (data.purchase.quantity > 1) {
           setAttendees(
-            Array.from({ length: data.quantity - 1 }, () => ({
+            Array.from({ length: data.purchase.quantity - 1 }, () => ({
               name: "",
               email: "",
               phone: "",
@@ -97,24 +108,23 @@ const PaymentSuccess = () => {
         waiver_status: "pending",
       }));
 
-      const { error: insertError } = await supabase
-        .from("attendees")
-        .upsert(additionalRows, {
-          onConflict: "purchase_id,email",
+      const { data: submitData, error: insertError } =
+        await supabase.functions.invoke<SubmitAttendeesResponse>("submit-attendees", {
+          body: {
+            purchaseId: purchase.id,
+            attendees: additionalRows,
+          },
         });
 
-      if (insertError) throw insertError;
+      if (insertError || submitData?.error) {
+        throw new Error(submitData?.error || insertError?.message || "Unable to save attendees");
+      }
 
-      const { data: inserted } = await supabase
-        .from("attendees")
-        .select("id, name, email, waiver_token")
-        .eq("purchase_id", purchase.id)
-        .eq("is_buyer", false);
-
+      const inserted = submitData?.attendees;
       if (inserted && inserted.length > 0) {
         await supabase.functions.invoke("send-waiver-emails", {
           body: {
-            attendees: (inserted as WaiverEmailRecipient[]).map((att) => ({
+            attendees: inserted.map((att) => ({
               name: att.name,
               email: att.email,
               waiver_token: att.waiver_token,

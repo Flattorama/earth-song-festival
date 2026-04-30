@@ -24,6 +24,16 @@ interface AttendeeData {
   waiver_status: string;
 }
 
+interface AttendeeResponse {
+  attendee: AttendeeData | null;
+  error?: string;
+}
+
+interface SignWaiverResponse {
+  success?: boolean;
+  error?: string;
+}
+
 const SignWaiver = () => {
   const { token } = useParams<{ token: string }>();
   const [attendee, setAttendee] = useState<AttendeeData | null>(null);
@@ -62,22 +72,23 @@ const SignWaiver = () => {
     }
 
     const fetchAttendee = async () => {
-      const { data, error } = await supabase
-        .from("attendees")
-        .select("id, name, email, phone, waiver_status")
-        .eq("waiver_token", token)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke<AttendeeResponse>(
+        "get-attendee-by-token",
+        {
+          body: { token },
+        }
+      );
 
-      if (error || !data) {
+      if (error || data?.error || !data?.attendee) {
         setNotFound(true);
-      } else if (data.waiver_status === "signed") {
-        setAttendee(data);
+      } else if (data.attendee.waiver_status === "signed") {
+        setAttendee(data.attendee);
         setAlreadySigned(true);
       } else {
-        setAttendee(data);
-        setLegalName(data.name);
-        setEmail(data.email);
-        setPhone(data.phone || "");
+        setAttendee(data.attendee);
+        setLegalName(data.attendee.name);
+        setEmail(data.attendee.email);
+        setPhone(data.attendee.phone || "");
       }
       setLoading(false);
     };
@@ -98,19 +109,21 @@ const SignWaiver = () => {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from("attendees")
-        .update({
-          name: legalName.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          waiver_status: "signed",
-          waiver_signed_at: new Date().toISOString(),
-          waiver_ip_address: "",
-        })
-        .eq("id", attendee.id);
+      const { data, error } = await supabase.functions.invoke<SignWaiverResponse>(
+        "sign-waiver",
+        {
+          body: {
+            token,
+            legalName: legalName.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+          },
+        }
+      );
 
-      if (error) throw error;
+      if (error || data?.error) {
+        throw new Error(data?.error || error?.message || "Unable to submit waiver");
+      }
 
       setSigned(true);
       toast.success("Waiver signed successfully.");

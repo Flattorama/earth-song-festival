@@ -11,10 +11,14 @@ CREATE TABLE IF NOT EXISTS public.purchases (
 
 ALTER TABLE public.purchases ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can read purchases by checkout session"
-  ON public.purchases FOR SELECT
-  TO anon, authenticated
-  USING (true);
+CREATE POLICY "Service role can manage purchases"
+  ON public.purchases FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+REVOKE ALL ON public.purchases FROM anon, authenticated;
+GRANT ALL ON public.purchases TO service_role;
 
 CREATE TABLE IF NOT EXISTS public.attendees (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -33,53 +37,14 @@ CREATE TABLE IF NOT EXISTS public.attendees (
 
 ALTER TABLE public.attendees ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can submit attendee waiver data"
-  ON public.attendees FOR INSERT
-  TO anon, authenticated
+CREATE POLICY "Service role can manage attendees"
+  ON public.attendees FOR ALL
+  TO service_role
+  USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Anyone can sign pending attendee waiver"
-  ON public.attendees FOR UPDATE
-  TO anon, authenticated
-  USING (waiver_status = 'pending')
-  WITH CHECK (waiver_status = 'signed');
-
-CREATE POLICY "Anyone can read attendee waiver status"
-  ON public.attendees FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
 REVOKE ALL ON public.attendees FROM anon, authenticated;
-GRANT SELECT (
-  id,
-  purchase_id,
-  name,
-  email,
-  phone,
-  is_buyer,
-  waiver_status,
-  waiver_signed_at,
-  waiver_ip_address,
-  created_at
-) ON public.attendees TO anon, authenticated;
-GRANT INSERT (
-  purchase_id,
-  name,
-  email,
-  phone,
-  is_buyer,
-  waiver_status,
-  waiver_signed_at,
-  waiver_ip_address
-) ON public.attendees TO anon, authenticated;
-GRANT UPDATE (
-  name,
-  email,
-  phone,
-  waiver_status,
-  waiver_signed_at,
-  waiver_ip_address
-) ON public.attendees TO anon, authenticated;
+GRANT ALL ON public.attendees TO service_role;
 
 ALTER TABLE public.waiver_acceptances
   ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMP WITH TIME ZONE DEFAULT now(),

@@ -106,7 +106,11 @@ const WaiverDialog = ({
       });
 
       if (error) {
-        throw error;
+        throw new Error(
+          data && typeof data === "object" && "error" in data
+            ? String(data.error)
+            : error.message
+        );
       }
 
       if (!data?.url) {
