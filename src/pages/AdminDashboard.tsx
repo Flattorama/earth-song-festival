@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader as Loader2, RefreshCw, Shield, ShieldCheck, Clock } from "lucide-react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -73,11 +74,15 @@ const AdminDashboard = () => {
 
     if (error || data?.error) {
       console.error("Failed to load admin dashboard:", data?.error || error);
-      setAuthError("Unable to load admin dashboard. Check your admin token.");
       setAttendees([]);
       setPurchases([]);
-      setAdminToken("");
-      window.localStorage.removeItem("earthsong_admin_token");
+      if (error instanceof FunctionsHttpError && error.context.status === 403) {
+        setAuthError("Unable to load admin dashboard. Check your admin token.");
+        setAdminToken("");
+        window.localStorage.removeItem("earthsong_admin_token");
+      } else {
+        setAuthError("Failed to load dashboard. Please try again.");
+      }
     } else {
       setAttendees(data?.attendees || []);
       setPurchases(data?.purchases || []);
