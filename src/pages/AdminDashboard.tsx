@@ -76,6 +76,8 @@ const AdminDashboard = () => {
       setAuthError("Unable to load admin dashboard. Check your admin token.");
       setAttendees([]);
       setPurchases([]);
+      setAdminToken("");
+      window.localStorage.removeItem("earthsong_admin_token");
     } else {
       setAttendees(data?.attendees || []);
       setPurchases(data?.purchases || []);
