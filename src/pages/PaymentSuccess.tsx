@@ -88,16 +88,6 @@ const PaymentSuccess = () => {
     setSubmitting(true);
 
     try {
-      const buyerRow = {
-        purchase_id: purchase.id,
-        name: purchase.buyer_name,
-        email: purchase.buyer_email,
-        phone: "",
-        is_buyer: true,
-        waiver_status: "signed",
-        waiver_signed_at: new Date().toISOString(),
-      };
-
       const additionalRows = attendees.map((a) => ({
         purchase_id: purchase.id,
         name: a.name.trim(),
@@ -109,7 +99,9 @@ const PaymentSuccess = () => {
 
       const { error: insertError } = await supabase
         .from("attendees")
-        .insert([buyerRow, ...additionalRows]);
+        .upsert(additionalRows, {
+          onConflict: "purchase_id,email",
+        });
 
       if (insertError) throw insertError;
 
