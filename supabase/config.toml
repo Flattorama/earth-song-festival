@@ -1,5 +1,23 @@
 project_id = "bdkaqgvzjkixwakzploq"
 
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.get-purchase]
+verify_jwt = false
+
+[functions.submit-attendees]
+verify_jwt = false
+
+[functions.get-attendee-by-token]
+verify_jwt = false
+
+[functions.sign-waiver]
+verify_jwt = false
+
+[functions.get-admin-dashboard-data]
+verify_jwt = false
+
 [functions.google-sheets-sync]
 verify_jwt = false
 
