@@ -42,6 +42,7 @@ const FacilitatorsSection = () => {
                       src={facilitator.image}
                       alt={facilitator.name}
                       className="w-full h-full object-cover"
+                      style={facilitator.imagePosition ? { objectPosition: facilitator.imagePosition } : undefined}
                       loading="lazy"
                     />
                   </div>

@@ -3,6 +3,7 @@ export interface Facilitator {
   role: string;
   bio: string;
   image?: string;
+  imagePosition?: string;
 }
 
 export const facilitators: Facilitator[] = [
@@ -40,21 +41,28 @@ export const facilitators: Facilitator[] = [
     name: "Lumi",
     role: "Cosmic Guide & Astrologer",
     bio: "Lumi is a metaphysical polymath and cosmic codebreaker devoted to helping people remember their innate connection to the living universe.\n\nAs founder of the Bright Light Collective, she weaves mysticism, consciousness studies, and embodied practice to guide others back into relationship with the cosmos. Through the lens of 13 Sign Sidereal astrology, alongside Human Design and the Gene Keys, Lumi explores the energetic blueprints that shape our lives and collective evolution.\n\nHer work invites us to reconnect with the forces that shape our reality—from the intelligence within the body to the wisdom written in the stars.",
+    image: "/facilitators/lumi.jpg",
+    imagePosition: "center 30%",
   },
   {
     name: "Hot Mess Closet",
     role: "Vintage & Handmade Vendor",
     bio: "Hot Mess Closet is a treasure trove of vintage and thrifted clothing waiting for its next adventure.\n\nWith an eye for bold pieces, nostalgic finds, and the perfectly imperfect, this booth is part style playground, part treasure hunt. Alongside the racks of funky vintage gems, you’ll also find locally handmade jewelry crafted by Shawna Sparkes (Alex) herself.",
+    image: "/facilitators/hotmesscloset.jpg",
+    imagePosition: "center 25%",
   },
   {
     name: "Ferdinand Mels",
     role: "Workshop Facilitator — SpiritFractals",
     bio: "Ferdinand Mels is an author, speaker, and founder of SpiritFractals whose work is rooted in lucidity, coherence, and the wisdom of the soul. He creates spaces where people can slow down, clear the noise, and return to a steadier relationship with the deeper signal of who they are beneath conditioning, overwhelm, and distraction.\n\nHis teaching is soul first, grounded in the understanding that clarity does not need to be manufactured. It emerges when the channel clears, the field settles, and the body becomes quiet enough to hear what the soul has been carrying all along. Blending spiritual insight with embodied practice, Ferdinand helps people restore coherence, reconnect with their inner knowing, and live in greater alignment with the life their soul came here to live.\n\nAt Earth Song Festival Retreat, he will share a workshop on clearing the channel and field, inviting participants to release static, restore presence, and come back into deeper communion with their own soul’s guidance.",
+    image: "/facilitators/ferdinand.jpg",
   },
   {
     name: "Chelsi Rodrigues",
     role: "Somatic Movement Facilitator",
     bio: "Chelsi Rodrigues is a certified fitness professional with a deep love for movement, embodiment, and wholeness. Through somatic practices and guided movement, she creates a space where the body becomes a vessel for emotional expression, release, and reconnection.\n\nIn a collaborative workshop Primal Flow Movement, Chelsi will assist in guiding participants through intuitive movement and somatic prompts designed to unlock emotions held within the body. This journey invites you to move beyond the mind and into the wisdom of the body, allowing what has been stored or suppressed to be released through breath, rhythm, and primal expression.\n\nThrough this embodied exploration, participants will create more emotional space, regulate the nervous system, and reconnect with their natural flow of energy and vitality. This collaborative experience will be held in partnership with Sam and Collin, weaving guided prompts, supportive presence, and immersive movement into a powerful collective release.",
+    image: "/facilitators/chelsi.png",
+    imagePosition: "center 20%",
   },
   {
     name: "Angel Vollick & Vita Bowen",
