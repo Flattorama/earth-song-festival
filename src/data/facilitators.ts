@@ -4,6 +4,8 @@ export interface Facilitator {
   bio: string;
   image?: string;
   imagePosition?: string;
+  image2?: string;
+  image2Position?: string;
 }
 
 export const facilitators: Facilitator[] = [
@@ -69,6 +71,9 @@ export const facilitators: Facilitator[] = [
     role: "Fire Dance Performers & Workshop Leaders",
     bio: "Ever felt the call to dance with fire? Whether you’re brand new or already love to spin, this playful and empowering workshop invites you to explore the art of fire dancing in a safe, supportive, and exhilarating space.\n\nYou’ll learn foundational movement, fire safety, and flow techniques that help you build confidence with the element of fire. For those ready to go deeper, we’ll explore creative patterns, playful choreography, and performance skills that help you embody the flame.\n\nAngel Vollick and Vita Bowen will also be performing live with fire, sharing the magic of spinning fire. Come ignite your spirit and discover the beauty of dancing with fire.",
     image: "/facilitators/angelvollick.jpeg",
+    imagePosition: "center 40%",
+    image2: "/facilitators/vitabowen.jpeg",
+    image2Position: "center 25%",
   },
   {
     name: "Will Ross",

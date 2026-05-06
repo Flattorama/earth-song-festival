@@ -36,7 +36,28 @@ const FacilitatorsSection = () => {
               data-testid={`card-facilitator-${index}`}
             >
               <AccordionTrigger className="flex-col items-center text-center p-6 hover:no-underline [&>svg]:hidden">
-                {facilitator.image ? (
+                {facilitator.image && facilitator.image2 ? (
+                  <div className="flex items-center justify-center mb-4 flex-shrink-0">
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gold/30 -mr-3 relative z-10">
+                      <img
+                        src={facilitator.image}
+                        alt={facilitator.name}
+                        className="w-full h-full object-cover"
+                        style={facilitator.imagePosition ? { objectPosition: facilitator.imagePosition } : undefined}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gold/30">
+                      <img
+                        src={facilitator.image2}
+                        alt={facilitator.name}
+                        className="w-full h-full object-cover"
+                        style={facilitator.image2Position ? { objectPosition: facilitator.image2Position } : undefined}
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                ) : facilitator.image ? (
                   <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-gold/30 mb-4 flex-shrink-0">
                     <img
                       src={facilitator.image}
