@@ -13,7 +13,7 @@ const VolunteerSection = () => {
               VOLUNTEER
             </p>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold mb-6">
-              Join Our Village Crew
+              Join our Earth Song Team
             </h2>
             <div className="space-y-4 text-secondary-foreground/80 leading-relaxed mb-8">
               <p>
