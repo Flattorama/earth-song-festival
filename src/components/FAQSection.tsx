@@ -16,7 +16,7 @@ const faqItems = [
   },
   {
     question: "Is camping available?",
-    answer: "Earth Song is a weekend gathering with on-site camping included. Still Life Retreat & Lake also offers accommodation options for those who prefer more comfort. Details will be sent to ticket holders closer to the event.",
+    answer: "Shared luxury trailer accommodation is available for $100 per person, per night. Details and add-on booking instructions will be sent to ticket holders ahead of the festival.",
   },
   {
     question: "What should I bring?",
@@ -36,7 +36,7 @@ const faqItems = [
   },
   {
     question: "Is there an age requirement?",
-    answer: "Yes. This event is for attendees 18 years of age or older. All attendees must confirm they are at least 18 when signing the waiver.",
+    answer: "Earth Song Festival Retreat welcomes adults and mature teens accompanied by a parent or guardian. Babies in arms are welcome to attend free of charge with a ticketed adult. Some workshops may have specific age recommendations.",
   },
   {
     question: "What's the refund policy?",

@@ -27,7 +27,7 @@ BEGIN
   payload := jsonb_build_object('record', row_to_json(NEW));
 
   PERFORM net.http_post(
-    url := 'https://gontbearierzkbyvyubw.supabase.co/functions/v1/google-sheets-sync',
+    url := 'https://bdkaqgvzjkixwakzploq.supabase.co/functions/v1/google-sheets-sync',
     headers := jsonb_build_object(
       'Content-Type', 'application/json'
     ),

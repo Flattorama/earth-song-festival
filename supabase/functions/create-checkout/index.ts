@@ -3,25 +3,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const TICKETS: Record<
-  string,
-  { name: string; description: string; amount: number }
-> = {
+const TICKETS: Record<string, { name: string; description: string; amount: number }> = {
   "early-bird": {
-    name: "Earth Song \u2014 Early Bird Ticket",
+    name: "Earth Song \u2014 Early Bird Ticket (Adult + babies in arms)",
     description:
-      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle. Babies in arms attend free.",
     amount: 29900,
   },
   "regular-admission": {
-    name: "Earth Song \u2014 Regular Admission",
+    name: "Earth Song \u2014 Regular Admission (Adult + babies in arms)",
     description:
-      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering. Babies in arms attend free.",
     amount: 33300,
   },
   "saturday-day-pass": {
@@ -55,8 +52,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Early Bird expiry: May 1, 2026 at 11:59:59 PM EST = May 2, 2026 03:59:59 UTC
-    if (ticketType === "early-bird" && new Date() >= new Date("2026-05-02T03:59:59Z")) {
+    if (ticketType === "early-bird" && new Date() >= new Date("2026-05-06T03:59:59Z")) {
       return new Response(
         JSON.stringify({ error: "Early Bird tickets are no longer available." }),
         {
@@ -129,7 +125,10 @@ Deno.serve(async (req) => {
       metadata: {
         ticket_type: ticketType,
         attendee_name: customerName || "",
-        referralCode: referralCode || "none",
+        attendee_email: customerEmail || "",
+        attendee_phone: customerPhone || "",
+        attendee_address: customerAddress || "",
+        referral_code: referralCode || "none",
       },
     };
 

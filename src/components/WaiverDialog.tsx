@@ -15,11 +15,6 @@ import { toast } from "sonner";
 import WaiverContent from "./WaiverContent";
 import { supabase } from "@/integrations/supabase/client";
 
-const CHECKOUT_URL =
-  "https://gontbearierzkbyvyubw.supabase.co/functions/v1/create-checkout";
-const ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbnRiZWFyaWVyemtieXZ5dWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MTE4NTUsImV4cCI6MjA4ODk4Nzg1NX0._k2mjr5frBTbiiTQZUS4ikFA92YmIK-tR0qq_fgamRk";
-
 interface WaiverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,8 +33,6 @@ const WaiverDialog = ({
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [agreed, setAgreed] = useState(false);
-  const [section1Checked, setSection1Checked] = useState(false);
-  const [section2Checked, setSection2Checked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [referralCode, setReferralCode] = useState("");
@@ -49,10 +42,7 @@ const WaiverDialog = ({
   const [referralFacilitator, setReferralFacilitator] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const canSubmit =
-    name.trim() !== "" &&
-    email.trim() !== "" &&
-    agreed;
+  const canSubmit = name.trim() !== "" && email.trim() !== "" && agreed;
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -69,7 +59,7 @@ const WaiverDialog = ({
       return;
     }
     setReferralStatus("validating");
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("referral_codes")
       .select("facilitator_name")
       .eq("code", trimmed)
@@ -97,34 +87,30 @@ const WaiverDialog = ({
     setLoading(true);
 
     try {
-      const res = await fetch(CHECKOUT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ANON_KEY}`,
-          apikey: ANON_KEY,
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
           ticketType,
           customerEmail: email.trim(),
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerAddress: address.trim(),
           referralCode: referralStatus === "valid" ? referralCode.trim().toUpperCase() : undefined,
-        }),
+        },
       });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result?.error || `Server error (${res.status})`);
+      if (error) {
+        throw new Error(
+          data && typeof data === "object" && "error" in data
+            ? String(data.error)
+            : error.message
+        );
       }
 
-      if (!result?.url) {
+      if (!data?.url) {
         throw new Error("No checkout URL returned");
       }
 
-      window.location.href = result.url;
+      window.location.href = data.url;
     } catch (err: unknown) {
       console.error("Waiver/checkout error:", err);
       const message =
@@ -143,8 +129,6 @@ const WaiverDialog = ({
     setPhone("");
     setAddress("");
     setAgreed(false);
-    setSection1Checked(false);
-    setSection2Checked(false);
     setShowScrollHint(true);
     setReferralCode("");
     setReferralStatus("idle");
@@ -158,13 +142,13 @@ const WaiverDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0 flex flex-col">
-        <div className="sticky top-0 z-10 bg-background px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
+      <DialogContent className="flex max-h-[96dvh] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-h-[90vh] sm:w-full">
+        <div className="sticky top-0 z-10 flex-shrink-0 border-b border-border bg-background px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl text-primary">
+            <DialogTitle className="font-serif text-lg text-primary sm:text-xl">
               Liability Waiver Agreement
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs leading-snug sm:text-sm">
               Please read the waiver below, fill in your information, and accept
               before proceeding to purchase your{" "}
               <span className="font-medium text-foreground">{ticketLabel}</span>{" "}
@@ -176,16 +160,10 @@ const WaiverDialog = ({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto overscroll-contain px-6 pt-4 pb-2 relative"
-          style={{ WebkitOverflowScrolling: "touch", maxHeight: "400px" }}
+          className="relative min-h-[34dvh] flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-3 sm:min-h-0 sm:px-6 sm:pt-4"
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <WaiverContent
-            showCheckboxes
-            section1Checked={section1Checked}
-            onSection1Change={setSection1Checked}
-            section2Checked={section2Checked}
-            onSection2Change={setSection2Checked}
-          />
+          <WaiverContent />
           <div className="h-4" />
           {/* Bottom fade gradient */}
           {showScrollHint && (
@@ -194,7 +172,7 @@ const WaiverDialog = ({
         </div>
 
         {showScrollHint && (
-          <div className="flex justify-center py-1 flex-shrink-0">
+          <div className="flex flex-shrink-0 justify-center py-1">
             <button
               type="button"
               onClick={scrollToBottom}
@@ -206,11 +184,11 @@ const WaiverDialog = ({
           </div>
         )}
 
-        <div className="border-t border-border px-6 py-5 space-y-4 flex-shrink-0">
-          <h4 className="font-serif text-base font-semibold text-primary">
+        <div className="max-h-[50dvh] flex-shrink-0 space-y-3 overflow-y-auto border-t border-border px-4 py-3 sm:max-h-none sm:space-y-4 sm:overflow-visible sm:px-6 sm:py-5">
+          <h4 className="font-serif text-sm font-semibold text-primary sm:text-base">
             Attendee Information
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="waiver-name">
                 Full Name <span className="text-destructive">*</span>
@@ -282,7 +260,7 @@ const WaiverDialog = ({
             )}
           </div>
 
-          <div className="flex items-start gap-3 pt-1">
+          <div className="flex items-start gap-2 pt-1 sm:gap-3">
             <Checkbox
               id="waiver-agree"
               checked={agreed}
@@ -291,7 +269,7 @@ const WaiverDialog = ({
             />
             <Label
               htmlFor="waiver-agree"
-              className="text-sm leading-snug cursor-pointer text-foreground/80"
+              className="cursor-pointer text-xs leading-snug text-foreground/80 sm:text-sm"
             >
               I have read this Agreement in full, understand its contents, and
               voluntarily agree to its terms. I understand that I am waiving
@@ -302,7 +280,7 @@ const WaiverDialog = ({
           <Button
             onClick={handleProceed}
             disabled={!canSubmit || loading}
-            className="w-full h-12 rounded-lg text-base bg-primary text-primary-foreground"
+            className="h-11 w-full rounded-lg bg-primary text-base text-primary-foreground sm:h-12"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
