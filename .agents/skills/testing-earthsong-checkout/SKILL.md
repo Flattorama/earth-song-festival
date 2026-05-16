@@ -7,7 +7,7 @@ Use this skill when testing Earth Song Festival checkout, waiver, Supabase edge 
 - `EARTHSONG_SUPABASE_ACCESS_TOKEN` — Supabase CLI deploy/config access for project `bdkaqgvzjkixwakzploq`.
 - `EARTHSONG_SUPABASE_ANON_KEY` — active project anon key for smoke checks and local builds.
 - `EARTHSONG_SUPABASE_SERVICE_ROLE_KEY` — active project service-role key for server-side verification only.
-- `EARTHSONG_STRIPE_SECRET_KEY` — used to expire test Stripe Checkout sessions after opening them.
+- `EARTHSONG_STRIPE_SECRET_KEY` — used to inspect/expire test Stripe Checkout sessions after opening them.
 - `EARTHSONG_STRIPE_WEBHOOK_SECRET` — needed when testing signed webhook handling.
 - `ADMIN_DASHBOARD_TOKEN` — required to verify authenticated `/admin` data loading.
 - `EARTHSONG_GOOGLE_SERVICE_ACCOUNT_KEY` and `EARTHSONG_GOOGLE_SPREADSHEET_ID` — needed for Google Sheets sync verification.
@@ -32,7 +32,7 @@ npm test
 
 1. Open `https://earthsongfestival.com/?checkout-test=<timestamp>`.
 2. Click `Buy Tickets` in the top navigation.
-3. Click `Reserve Early Bird`.
+3. Click the relevant adult ticket CTA.
 4. In the `Liability Waiver Agreement` modal, fill:
    - Full Name: `Devin Checkout Tester`
    - Email: `devin-checkout-<timestamp>@example.com`
@@ -44,6 +44,53 @@ npm test
 9. Stop before entering payment details.
 
 If the flow fails, record the exact toast text. Common edge-function failures include `Failed to send a request to the Edge Function` and `Edge Function returned a non-2xx status code`.
+
+## Linked Youth Checkout UI Test
+
+Use this when verifying adult tickets linked with paid/free youth tickets and minor waiver records.
+
+1. Start from an adult ticket card, not a standalone youth route. Youth tickets should be added inside the adult waiver modal.
+2. Fill adult name/email and add youth attendees from the `Youth / Minor Tickets` section.
+3. Cover at least one paid youth and one free under-2 youth in the same checkout:
+   - Paid youth example: Full Weekend, Ages 13–18, amount `15000` cents.
+   - Free youth example: Full Weekend, Under 2, amount `0` cents.
+4. Assert `Proceed to Payment` remains disabled until all youth names, DOBs, guardian initials, adult agreement, and minor agreement are complete.
+5. Assert the visible modal shows both youth attendees, both DOBs, paid-youth subtotal, and the under-2 youth as free before submission.
+6. Click `Proceed to Payment` and stop after Stripe Checkout opens.
+7. Use the Stripe line-items API to verify only paid tickets are in Stripe: adult ticket plus paid youth line items. Free under-2 minors should not be Stripe line items.
+8. Query local/target Supabase `minor_waiver_acceptances` for the test email and verify each minor row stores name, DOB, pass type, age band, amount, and a shared non-empty `stripe_session_id`.
+9. Verify authenticated `/admin` shows the `Minor Waivers` count and rows for each youth attendee.
+10. Verify unauthenticated admin access still returns HTTP `403` with `{"error":"Unauthorized"}`.
+11. Expire the created Stripe Checkout Session.
+
+Chrome/Linux date inputs may not reliably accept typed `YYYY-MM-DD` values through desktop automation. If needed, set DOB fields through the browser CDP automation channel, but only count the test as passed if the visible modal shows the expected dates before submit and the database stores those exact values after checkout creation.
+
+## Stripe Session Inspection
+
+After opening Stripe Checkout, inspect line items without entering payment details:
+
+```bash
+python3 - <<'PY'
+import json, os, re, urllib.request
+session_id = 'cs_live_or_test_id_here'
+req = urllib.request.Request(
+    f'https://api.stripe.com/v1/checkout/sessions/{session_id}/line_items?limit=10',
+    headers={'Authorization': 'Bearer ' + os.environ['EARTHSONG_STRIPE_SECRET_KEY']},
+)
+with urllib.request.urlopen(req, timeout=20) as res:
+    data = json.load(res)
+print(json.dumps([
+    {
+      'description': item.get('description'),
+      'currency': item.get('currency'),
+      'amount_subtotal': item.get('amount_subtotal'),
+      'amount_total': item.get('amount_total'),
+      'quantity': item.get('quantity')
+    }
+    for item in data.get('data', [])
+], indent=2))
+PY
+```
 
 ## Stripe Session Cleanup
 
