@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const [attendeesRes, purchasesRes] = await Promise.all([
+    const [attendeesRes, purchasesRes, minorWaiversRes] = await Promise.all([
       supabase
         .from("attendees")
         .select(
@@ -43,7 +43,13 @@ Deno.serve(async (req) => {
       supabase
         .from("purchases")
         .select(
-          "id, buyer_name, buyer_email, ticket_type, quantity, stripe_session_id, referral_code, created_at"
+          "id, buyer_name, buyer_email, ticket_type, quantity, adult_ticket_type, adult_ticket_count, youth_ticket_count, total_ticket_count, stripe_session_id, referral_code, created_at"
+        )
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("minor_waiver_acceptances")
+        .select(
+          "id, purchase_id, guardian_name, guardian_email, guardian_phone, adult_ticket_type, minor_name, minor_date_of_birth, youth_pass_type, youth_age_band, youth_ticket_label, youth_ticket_amount, waiver_version, accepted_at, stripe_session_id, created_at"
         )
         .order("created_at", { ascending: false }),
     ]);
@@ -54,11 +60,15 @@ Deno.serve(async (req) => {
     if (purchasesRes.error) {
       throw purchasesRes.error;
     }
+    if (minorWaiversRes.error) {
+      throw minorWaiversRes.error;
+    }
 
     return new Response(
       JSON.stringify({
         attendees: attendeesRes.data || [],
         purchases: purchasesRes.data || [],
+        minorWaivers: minorWaiversRes.data || [],
       }),
       {
         status: 200,

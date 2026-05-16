@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data, error } = await supabase
       .from("purchases")
-      .select("id, buyer_name, buyer_email, ticket_type, quantity")
+      .select("id, buyer_name, buyer_email, ticket_type, quantity, adult_ticket_count, youth_ticket_count, total_ticket_count")
       .eq("stripe_session_id", sessionId)
       .maybeSingle();
 
