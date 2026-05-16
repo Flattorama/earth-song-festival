@@ -26,14 +26,38 @@ interface PurchaseRow {
   buyer_email: string;
   ticket_type: string;
   quantity: number;
+  adult_ticket_type: string | null;
+  adult_ticket_count: number | null;
+  youth_ticket_count: number | null;
+  total_ticket_count: number | null;
   stripe_session_id: string;
   referral_code: string | null;
+  created_at: string;
+}
+
+interface MinorWaiverRow {
+  id: string;
+  purchase_id: string | null;
+  guardian_name: string;
+  guardian_email: string;
+  guardian_phone: string | null;
+  adult_ticket_type: string;
+  minor_name: string;
+  minor_date_of_birth: string;
+  youth_pass_type: string;
+  youth_age_band: string;
+  youth_ticket_label: string;
+  youth_ticket_amount: number;
+  waiver_version: string;
+  accepted_at: string;
+  stripe_session_id: string | null;
   created_at: string;
 }
 
 interface AdminDashboardResponse {
   attendees?: AttendeeRow[];
   purchases?: PurchaseRow[];
+  minorWaivers?: MinorWaiverRow[];
   error?: string;
 }
 
@@ -46,6 +70,7 @@ const TICKET_LABELS: Record<string, string> = {
 const AdminDashboard = () => {
   const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [minorWaivers, setMinorWaivers] = useState<MinorWaiverRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "signed" | "pending">("all");
   const [search, setSearch] = useState("");
@@ -76,6 +101,7 @@ const AdminDashboard = () => {
       console.error("Failed to load admin dashboard:", data?.error || error);
       setAttendees([]);
       setPurchases([]);
+      setMinorWaivers([]);
       if (error instanceof FunctionsHttpError && error.context.status === 403) {
         setAuthError("Unable to load admin dashboard. Check your admin token.");
         setAdminToken("");
@@ -86,6 +112,7 @@ const AdminDashboard = () => {
     } else {
       setAttendees(data?.attendees || []);
       setPurchases(data?.purchases || []);
+      setMinorWaivers(data?.minorWaivers || []);
     }
     setLoading(false);
   }, [adminToken]);
@@ -116,6 +143,7 @@ const AdminDashboard = () => {
   const totalAttendees = attendees.length;
   const signedCount = attendees.filter((a) => a.waiver_status === "signed").length;
   const pendingCount = attendees.filter((a) => a.waiver_status === "pending").length;
+  const minorCount = minorWaivers.length;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "--";
@@ -179,7 +207,7 @@ const AdminDashboard = () => {
 
         {adminToken && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-xl border border-border p-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -188,6 +216,17 @@ const AdminDashboard = () => {
                   <div>
                     <p className="text-2xl font-bold text-foreground">{totalAttendees}</p>
                     <p className="text-sm text-muted-foreground">Total Attendees</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl border border-border p-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-secondary/30 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">{minorCount}</p>
+                    <p className="text-sm text-muted-foreground">Minor Waivers</p>
                   </div>
                 </div>
               </div>
@@ -308,6 +347,63 @@ const AdminDashboard = () => {
                           </TableRow>
                         );
                       })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {minorWaivers.length > 0 && (
+              <div className="mt-8 bg-white rounded-xl border border-border overflow-hidden">
+                <div className="border-b border-border px-4 py-3">
+                  <h2 className="font-serif text-xl font-semibold text-primary">
+                    Minor Waivers
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Youth attendees linked to accompanying adult purchases.
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Minor</TableHead>
+                        <TableHead>DOB</TableHead>
+                        <TableHead>Youth Ticket</TableHead>
+                        <TableHead>Guardian</TableHead>
+                        <TableHead>Adult Ticket</TableHead>
+                        <TableHead>Accepted At</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {minorWaivers.map((minor) => (
+                        <TableRow key={minor.id}>
+                          <TableCell className="font-medium">{minor.minor_name}</TableCell>
+                          <TableCell>{minor.minor_date_of_birth}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{minor.youth_ticket_label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {minor.youth_ticket_amount === 0
+                                  ? "Free"
+                                  : `CA$${(minor.youth_ticket_amount / 100).toFixed(0)}`}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{minor.guardian_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {minor.guardian_email}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {TICKET_LABELS[minor.adult_ticket_type] || minor.adult_ticket_type}
+                          </TableCell>
+                          <TableCell>{formatDate(minor.accepted_at)}</TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>

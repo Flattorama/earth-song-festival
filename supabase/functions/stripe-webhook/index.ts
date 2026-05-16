@@ -137,6 +137,11 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
 
   const buyerEmail = metadata.attendee_email || session.customer_details?.email || "";
   const buyerName = metadata.attendee_name || session.customer_details?.name || "";
+  const adultTicketCount = Number.parseInt(metadata.adult_ticket_count || "1", 10) || 1;
+  const youthTicketCount = Number.parseInt(metadata.youth_ticket_count || "0", 10) || 0;
+  const totalTicketCount =
+    Number.parseInt(metadata.total_ticket_count || String(adultTicketCount + youthTicketCount), 10) ||
+    adultTicketCount + youthTicketCount;
 
   const { error: purchaseError } = await supabase.from('purchases').upsert(
     {
@@ -144,8 +149,18 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
       buyer_name: buyerName,
       buyer_email: buyerEmail,
       ticket_type: ticketType,
-      quantity: 1,
+      quantity: totalTicketCount,
       referral_code: metadata.referral_code === "none" ? null : metadata.referral_code,
+      adult_ticket_type: metadata.adult_ticket_type || ticketType,
+      adult_ticket_count: adultTicketCount,
+      youth_ticket_count: youthTicketCount,
+      total_ticket_count: totalTicketCount,
+      order_summary: {
+        adult_ticket_type: metadata.adult_ticket_type || ticketType,
+        adult_ticket_count: adultTicketCount,
+        youth_ticket_count: youthTicketCount,
+        total_ticket_count: totalTicketCount,
+      },
     },
     { onConflict: 'stripe_session_id' },
   );
@@ -192,6 +207,27 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
 
   if (waiverError) {
     console.error('Error linking waiver acceptance:', waiverError);
+  }
+
+  const { data: minorWaivers, error: minorWaiversError } = await supabase
+    .from('minor_waiver_acceptances')
+    .select('id, minor_name, guardian_email')
+    .eq('stripe_session_id', session.id);
+
+  if (minorWaiversError) {
+    console.error('Error loading minor waiver acceptances:', minorWaiversError);
+    return;
+  }
+
+  if (minorWaivers && minorWaivers.length > 0) {
+    const { error: minorLinkError } = await supabase
+      .from('minor_waiver_acceptances')
+      .update({ purchase_id: purchase.id })
+      .eq('stripe_session_id', session.id);
+
+    if (minorLinkError) {
+      console.error('Error linking minor waiver acceptances:', minorLinkError);
+    }
   }
 }
 

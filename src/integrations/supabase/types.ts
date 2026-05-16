@@ -58,34 +58,49 @@ export type Database = {
       }
       purchases: {
         Row: {
+          adult_ticket_count: number
+          adult_ticket_type: string | null
           buyer_email: string
           buyer_name: string
           created_at: string
           id: string
+          order_summary: Json
           quantity: number
           referral_code: string | null
           stripe_session_id: string
           ticket_type: string
+          total_ticket_count: number
+          youth_ticket_count: number
         }
         Insert: {
+          adult_ticket_count?: number
+          adult_ticket_type?: string | null
           buyer_email: string
           buyer_name: string
           created_at?: string
           id?: string
+          order_summary?: Json
           quantity?: number
           referral_code?: string | null
           stripe_session_id: string
           ticket_type: string
+          total_ticket_count?: number
+          youth_ticket_count?: number
         }
         Update: {
+          adult_ticket_count?: number
+          adult_ticket_type?: string | null
           buyer_email?: string
           buyer_name?: string
           created_at?: string
           id?: string
+          order_summary?: Json
           quantity?: number
           referral_code?: string | null
           stripe_session_id?: string
           ticket_type?: string
+          total_ticket_count?: number
+          youth_ticket_count?: number
         }
         Relationships: []
       }
@@ -169,6 +184,7 @@ export type Database = {
           attendee_phone: string | null
           accepted_at: string | null
           created_at: string
+          checkout_attempt_id: string | null
           id: string
           ip_address: string | null
           referral_code: string | null
@@ -183,6 +199,7 @@ export type Database = {
           attendee_phone?: string | null
           accepted_at?: string | null
           created_at?: string
+          checkout_attempt_id?: string | null
           id?: string
           ip_address?: string | null
           referral_code?: string | null
@@ -197,12 +214,85 @@ export type Database = {
           attendee_phone?: string | null
           accepted_at?: string | null
           created_at?: string
+          checkout_attempt_id?: string | null
           id?: string
           ip_address?: string | null
           referral_code?: string | null
           stripe_session_id?: string | null
           ticket_type?: string
           waiver_version?: string
+        }
+        Relationships: []
+      }
+      minor_waiver_acceptances: {
+        Row: {
+          accepted_at: string
+          adult_ticket_type: string
+          checkout_attempt_id: string | null
+          created_at: string
+          guardian_address: string | null
+          guardian_email: string
+          guardian_name: string
+          guardian_phone: string | null
+          id: string
+          ip_address: string | null
+          minor_date_of_birth: string
+          minor_name: string
+          parent_initials_indemnity: string
+          parent_initials_risk: string
+          purchase_id: string | null
+          stripe_session_id: string | null
+          waiver_version: string
+          youth_age_band: string
+          youth_pass_type: string
+          youth_ticket_amount: number
+          youth_ticket_label: string
+        }
+        Insert: {
+          accepted_at?: string
+          adult_ticket_type: string
+          checkout_attempt_id?: string | null
+          created_at?: string
+          guardian_address?: string | null
+          guardian_email: string
+          guardian_name: string
+          guardian_phone?: string | null
+          id?: string
+          ip_address?: string | null
+          minor_date_of_birth: string
+          minor_name: string
+          parent_initials_indemnity: string
+          parent_initials_risk: string
+          purchase_id?: string | null
+          stripe_session_id?: string | null
+          waiver_version: string
+          youth_age_band: string
+          youth_pass_type: string
+          youth_ticket_amount?: number
+          youth_ticket_label: string
+        }
+        Update: {
+          accepted_at?: string
+          adult_ticket_type?: string
+          checkout_attempt_id?: string | null
+          created_at?: string
+          guardian_address?: string | null
+          guardian_email?: string
+          guardian_name?: string
+          guardian_phone?: string | null
+          id?: string
+          ip_address?: string | null
+          minor_date_of_birth?: string
+          minor_name?: string
+          parent_initials_indemnity?: string
+          parent_initials_risk?: string
+          purchase_id?: string | null
+          stripe_session_id?: string | null
+          waiver_version?: string
+          youth_age_band?: string
+          youth_pass_type?: string
+          youth_ticket_amount?: number
+          youth_ticket_label?: string
         }
         Relationships: []
       }

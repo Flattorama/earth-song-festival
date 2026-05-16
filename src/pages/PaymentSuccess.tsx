@@ -13,6 +13,9 @@ interface Purchase {
   buyer_email: string;
   ticket_type: string;
   quantity: number;
+  adult_ticket_count?: number;
+  youth_ticket_count?: number;
+  total_ticket_count?: number;
 }
 
 interface PurchaseResponse {
@@ -68,9 +71,13 @@ const PaymentSuccess = () => {
 
       if (data?.purchase) {
         setPurchase(data.purchase);
-        if (data.purchase.quantity > 1) {
+        const additionalAdultCount = Math.max(
+          data.purchase.quantity - 1 - (data.purchase.youth_ticket_count || 0),
+          0
+        );
+        if (additionalAdultCount > 0) {
           setAttendees(
-            Array.from({ length: data.purchase.quantity - 1 }, () => ({
+            Array.from({ length: additionalAdultCount }, () => ({
               name: "",
               email: "",
               phone: "",
@@ -152,7 +159,7 @@ const PaymentSuccess = () => {
     );
   }
 
-  if (!purchase || purchase.quantity <= 1 || submitted) {
+  if (!purchase || attendees.length === 0 || submitted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -165,7 +172,7 @@ const PaymentSuccess = () => {
             Earth Song Festival Retreat{" "}
             {purchase && purchase.quantity > 1 ? "have" : "has"} been secured.
           </p>
-          {submitted && purchase && purchase.quantity > 1 && (
+          {submitted && purchase && attendees.length > 0 && (
             <p className="text-foreground/60 text-sm mb-6">
               Each additional attendee has been sent an email with a link to
               complete the required liability waiver. Tickets will be issued once

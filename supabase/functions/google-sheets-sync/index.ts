@@ -174,6 +174,30 @@ function buildWaiverRow(record: Record<string, string>): string[] {
   ];
 }
 
+function buildMinorWaiverRow(record: Record<string, string>): string[] {
+  return [
+    record.id || "",
+    record.guardian_name || "",
+    record.guardian_email || "",
+    record.guardian_phone || "",
+    record.guardian_address || "",
+    record.adult_ticket_type || "",
+    record.minor_name || "",
+    record.minor_date_of_birth || "",
+    record.youth_pass_type || "",
+    record.youth_age_band || "",
+    record.youth_ticket_label || "",
+    String(record.youth_ticket_amount || ""),
+    record.waiver_version || "",
+    record.parent_initials_risk || "",
+    record.parent_initials_indemnity || "",
+    record.ip_address || "",
+    record.stripe_session_id || "",
+    record.purchase_id || "",
+    record.accepted_at || "",
+  ];
+}
+
 function buildNewsletterRow(record: Record<string, string>): string[] {
   return [
     record.id || "",
@@ -202,6 +226,31 @@ const SHEET_CONFIG: Record<string, { name: string; headers: string[]; buildRow: 
     name: "Waiver Acceptances",
     headers: ["ID", "Name", "Email", "Phone", "Address", "Ticket Type", "Referral Code", "Waiver Version", "IP Address", "Stripe Session ID", "Accepted At"],
     buildRow: buildWaiverRow,
+  },
+  minor_waiver: {
+    name: "Minor Waivers",
+    headers: [
+      "ID",
+      "Guardian Name",
+      "Guardian Email",
+      "Guardian Phone",
+      "Guardian Address",
+      "Adult Ticket Type",
+      "Minor Name",
+      "Minor Date of Birth",
+      "Youth Pass Type",
+      "Youth Age Band",
+      "Youth Ticket Label",
+      "Youth Ticket Amount",
+      "Waiver Version",
+      "Risk Initials",
+      "Indemnity Initials",
+      "IP Address",
+      "Stripe Session ID",
+      "Purchase ID",
+      "Accepted At",
+    ],
+    buildRow: buildMinorWaiverRow,
   },
   newsletter: {
     name: "Newsletter Signups",
@@ -245,7 +294,7 @@ Deno.serve(async (req) => {
     const config = SHEET_CONFIG[type];
     if (!config) {
       return new Response(
-        JSON.stringify({ error: `Unknown type: ${type}. Must be one of: waiver, newsletter, volunteer` }),
+        JSON.stringify({ error: `Unknown type: ${type}. Must be one of: waiver, minor_waiver, newsletter, volunteer` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
