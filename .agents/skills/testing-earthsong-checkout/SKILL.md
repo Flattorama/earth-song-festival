@@ -65,17 +65,37 @@ Use this when verifying adult tickets linked with paid/free youth tickets and mi
 
 Chrome/Linux date inputs may not reliably accept typed `YYYY-MM-DD` values through desktop automation. If needed, set DOB fields through the browser CDP automation channel, but only count the test as passed if the visible modal shows the expected dates before submit and the database stores those exact values after checkout creation.
 
+## Targeted Live Paid-Youth Stripe Retest
+
+Use this narrower path when the specific production risk is that the UI accepts youth add-ons but Stripe Checkout drops the paid youth line item.
+
+1. Open `https://earthsongfestival.com/?live-youth-stripe-retest=<timestamp>#tickets`.
+2. Buy Regular Admission and add one Full Weekend youth with age band `Ages 13–18`.
+3. Verify the modal displays `Full Weekend Pass — Ages 13–18: CA$150` and `Youth ticket subtotal: CA$150`.
+4. Before filling all youth fields, verify `Proceed to Payment` is disabled.
+5. Fill minor name, DOB, guardian initials, the minor guardian agreement, and the adult waiver agreement.
+6. Click `Proceed to Payment` and stop at Stripe Checkout.
+7. Extract the session ID from the Checkout URL with `/pay/(cs_(?:live|test)_[^#?]+)`.
+8. Use the Stripe line-items API. Expected line items for Regular Admission + Full Weekend 13–18 youth:
+   - `Earth Song — Regular Admission (Adult + babies in arms)`, `33300` CAD, quantity `1`.
+   - `Earth Song — Full Weekend Youth Pass — Ages 13–18`, `15000` CAD, quantity `1`.
+   - Total `48300` cents.
+9. Query `minor_waiver_acceptances` for the test email and verify exactly one row with `youth_ticket_amount = 15000` and `stripe_session_id` matching the Stripe session.
+10. Expire the Stripe session.
+
+This targeted retest does not replace the broader linked-youth regression test with paid + free youth; it is useful for quickly proving the live backend no longer drops paid youth line items.
+
 ## Stripe Session Inspection
 
 After opening Stripe Checkout, inspect line items without entering payment details:
 
 ```bash
 python3 - <<'PY'
-import json, os, re, urllib.request
+import base64, json, os, urllib.request
 session_id = 'cs_live_or_test_id_here'
 req = urllib.request.Request(
     f'https://api.stripe.com/v1/checkout/sessions/{session_id}/line_items?limit=10',
-    headers={'Authorization': 'Bearer ' + os.environ['EARTHSONG_STRIPE_SECRET_KEY']},
+    headers={'Authorization': 'Basic ' + base64.b64encode((os.environ['EARTHSONG_STRIPE_SECRET_KEY'] + ':').encode()).decode()},
 )
 with urllib.request.urlopen(req, timeout=20) as res:
     data = json.load(res)
@@ -92,13 +112,36 @@ print(json.dumps([
 PY
 ```
 
+## Supabase Minor Waiver Verification
+
+Use REST with the service role key to verify test rows without printing secret values:
+
+```bash
+python3 - <<'PY'
+import json, os, urllib.parse, urllib.request
+project = 'bdkaqgvzjkixwakzploq'
+email = 'devin-checkout-<timestamp>@example.com'
+key = os.environ['EARTHSONG_SUPABASE_SERVICE_ROLE_KEY']
+params = urllib.parse.urlencode({
+    'guardian_email': f'eq.{email}',
+    'select': 'guardian_email,minor_name,minor_date_of_birth,youth_pass_type,youth_age_band,youth_ticket_label,youth_ticket_amount,stripe_session_id,accepted_at',
+})
+req = urllib.request.Request(
+    f'https://{project}.supabase.co/rest/v1/minor_waiver_acceptances?{params}',
+    headers={'apikey': key, 'Authorization': f'Bearer {key}'},
+)
+with urllib.request.urlopen(req, timeout=20) as res:
+    print(json.dumps(json.load(res), indent=2))
+PY
+```
+
 ## Stripe Session Cleanup
 
 After opening Stripe Checkout, expire the created session so no smoke checkout remains open:
 
 ```bash
 python3 - <<'PY'
-import json, os, re, urllib.error, urllib.request
+import base64, json, os, re, urllib.error, urllib.request
 # Read Chrome's active tab list and find the Stripe Checkout URL.
 tabs = json.load(urllib.request.urlopen('http://localhost:29229/json', timeout=5))
 for tab in tabs:
@@ -110,12 +153,13 @@ for tab in tabs:
     req = urllib.request.Request(
         f'https://api.stripe.com/v1/checkout/sessions/{session_id}/expire',
         data=b'',
-        headers={'Authorization': 'Bearer ' + os.environ['EARTHSONG_STRIPE_SECRET_KEY']},
+        headers={'Authorization': 'Basic ' + base64.b64encode((os.environ['EARTHSONG_STRIPE_SECRET_KEY'] + ':').encode()).decode()},
         method='POST',
     )
     try:
         with urllib.request.urlopen(req, timeout=20) as res:
-            print('expired_status', res.status)
+            data = json.load(res)
+            print('expired_status', res.status, data.get('status'), data.get('payment_status'))
     except urllib.error.HTTPError as exc:
         print('expire_status', exc.code)
 PY
@@ -144,6 +188,16 @@ PY
 ```
 
 Expected unauthenticated result: `admin_unauth_status 403` and `{"error":"Unauthorized"}`.
+
+## Supabase Backend Drift Diagnostics
+
+If the live UI shows current youth controls but Stripe Checkout omits youth line items, suspect Supabase backend drift rather than a frontend cache issue.
+
+1. Verify the deployed frontend bundle points at `https://bdkaqgvzjkixwakzploq.supabase.co` using the live bundle diagnostics below.
+2. Query `minor_waiver_acceptances` through REST with the service role key. A missing table or `404` means migrations are not applied remotely.
+3. Create a stop-at-Stripe session through the live UI and inspect line items via Stripe API. If the Supabase row exists but Stripe has only the adult line item, the deployed `create-checkout` function might be stale.
+4. After repairing/deploying, repeat the UI flow and Stripe API check; visual Checkout inspection alone is not sufficient.
+5. Expire every diagnostic Checkout session.
 
 ## Supabase Edge Function Deployment Notes
 
