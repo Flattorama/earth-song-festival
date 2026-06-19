@@ -157,10 +157,14 @@ export const facilitators: Facilitator[] = [
     name: "Tania Seagrove",
     role: "Community Yoga",
     bio: "Tania Seagrove first came to yoga through the healing pathway of recovery — and it changed everything. Over the past several years, she has been devoted to deepening her practice and studies of yoga through the Mount Madonna Institute, bringing together movement, breath, philosophy, and devotion.\n\nShe completed her 500-hour Ashaya Yoga certification and continues to study yoga as both a personal practice and an offering of service. What began as healing became a calling — and Tania now shares the transformative power of yoga with her community through accessible, heart-led classes.\n\nAt Earth Song, Tania will be guiding a gentle and grounding morning yoga practice, creating a space for participants to begin each day with presence, breath, and connection to the body.",
+    image: "/facilitators/taniaseagrove.jpeg",
+    imagePosition: "center 20%",
   },
   {
     name: "Dan Sauna",
     role: "Sauna Social — Hot & Cold Therapy Facilitator",
     bio: "Sauna Social brings the ancient art of hot and cold therapy directly to Earth Song Festival. Originally inspired by Nordic bathing culture, Sauna Social was born from a love of sauna, cold plunges, and the deeply grounding effects of alternating between heat and cold.\n\nDan believes in the power of contrast therapy to reset the nervous system, build resilience, and create natural community. There's something uniquely bonding about sweating it out together in a wood-fired sauna, then plunging into refreshing cold water — it strips away pretence and brings people into the present moment.\n\nAt Earth Song, Sauna Social will be offering sauna sessions throughout the weekend, creating a welcoming space for first-timers and seasoned heat lovers alike. Come warm up, cool down, and feel the magic of fire, water, and community working together.",
+    image: "/facilitators/saunasocial.jpeg",
+    imagePosition: "center 25%",
   },
 ];
