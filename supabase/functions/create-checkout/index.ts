@@ -245,6 +245,7 @@ Deno.serve(async (req) => {
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       line_items: lineItems,
       mode: "payment",
+      allow_promotion_codes: true,
       payment_method_configuration: "pmc_1THRrA9YdWVK7v3DXseZCFL2",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/#tickets`,
