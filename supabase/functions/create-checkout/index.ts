@@ -15,19 +15,19 @@ const TICKETS: Record<string, { name: string; description: string; amount: numbe
   "early-bird": {
     name: "Earth Song — Early Bird Ticket (Adult + babies in arms)",
     description:
-      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering, welcome gift bundle. Babies in arms attend free.",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments available for purchase, fire circle gathering, welcome gift bundle. Babies in arms attend free.",
     amount: 29900,
   },
   "regular-admission": {
     name: "Earth Song — Regular Admission (Adult + babies in arms)",
     description:
-      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments, fire circle gathering. Babies in arms attend free.",
+      "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments available for purchase, fire circle gathering. Babies in arms attend free.",
     amount: 33300,
   },
   "saturday-day-pass": {
     name: "Earth Song — Saturday Day Pass",
     description:
-      "Saturday access (9am–10pm), all Saturday ceremonies & workshops, live music & performances, organic meals & refreshments",
+      "Saturday access (9am–10pm), all Saturday ceremonies & workshops, live music & performances, organic meals & refreshments available for purchase",
     amount: 15000,
   },
 };
