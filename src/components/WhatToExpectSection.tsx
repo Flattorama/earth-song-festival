@@ -24,7 +24,7 @@ const features = [
   {
     icon: Utensils,
     title: "Nourishing Food",
-    description: "Plant-based meals crafted with love from local, organic ingredients.",
+    description: "Delicious meals crafted with love from local, organic ingredients, available for purchase.",
   },
   {
     icon: TreePine,
