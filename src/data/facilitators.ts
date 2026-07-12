@@ -167,4 +167,11 @@ export const facilitators: Facilitator[] = [
     image: "/facilitators/saunasocial.jpeg",
     imagePosition: "center 25%",
   },
+  {
+    name: "Jen Pinter",
+    role: "QiGong Teacher & Sound Healer",
+    bio: "Jen Pinter is a trained educator, RMT, yoga, meditation and qigong teacher, reiki and craniosacral practitioner, somatic inquiry coach and qualified sound healer. Jen has worked in alternative healthcare since 2001.\n\nHer goal is to inspire people to learn more about themselves physically, emotionally, mentally and spiritually, and then take that learning and not only implement it into their own lives but to also enrich the lives of others.\n\nQiGong is an ancient practice that combines slow, flowing movements drawn from nature with deep breathing to cultivate inner calm, balance and movement of your energy or qi. Perfect for all levels, it can be done standing or seated. QiGong promotes mental clarity, improved circulation, and a profound sense of grounding. It feels like meditation in motion.",
+    image: "/facilitators/jenpinter.jpg",
+    imagePosition: "center 22%",
+  },
 ];
