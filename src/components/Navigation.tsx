@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/drawer";
 
 const navLinks = [
+  { href: "#schedule", label: "Schedule" },
   { href: "#gathering", label: "The Gathering" },
   { href: "#expect", label: "What to Expect" },
   { href: "#tickets", label: "Tickets" },
