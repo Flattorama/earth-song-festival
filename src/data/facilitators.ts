@@ -174,4 +174,11 @@ export const facilitators: Facilitator[] = [
     image: "/facilitators/jenpinter.jpg",
     imagePosition: "center 22%",
   },
+  {
+    name: "Rachel McGarry",
+    role: "Mantra Artist & Yoga Teacher",
+    bio: "Rachel McGarry believes that Rest is Medicine. Through voice, mantra, and gentle music, she creates spaces where people can soften, exhale, and reconnect with themselves. Her offerings invite deep rest, nervous system restoration, and the simple yet profound healing that becomes possible when we slow down.\n\nA Canadian mantra artist and yoga teacher based in London, Ontario, Rachel is known for her soulful voice and heartfelt original music. Her award-winning album SHE RISES is a collection of songs inspired by devotion, the divine feminine, and the wisdom that lives within each of us. Whether leading Kirtan, offering a restorative yoga experience, or singing students into Savasana, Rachel’s intention is always the same: to create a space where people feel held, nourished, and at home within themselves.\n\nIn a world that celebrates constant doing, Rachel offers a gentle reminder that sometimes the most powerful thing we can do is rest.",
+    image: "/facilitators/rachelmcgarry.jpg",
+    imagePosition: "center 20%",
+  },
 ];

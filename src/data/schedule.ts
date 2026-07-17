@@ -211,8 +211,8 @@ export const schedule: ScheduleDay[] = [
             events: [{ title: "Yoga w/ Tania Seagrove" }],
           },
           {
-            time: "9:30–10 AM",
-            events: [{ title: "Sound Bath" }],
+            time: "9–9:45 AM",
+            events: [{ title: "Sound Bath w/ Rachel McGarry" }],
           },
         ],
       },
