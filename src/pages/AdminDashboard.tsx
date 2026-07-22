@@ -64,7 +64,9 @@ interface AdminDashboardResponse {
 const TICKET_LABELS: Record<string, string> = {
   "early-bird": "Early Bird",
   "regular-admission": "Regular",
-  "saturday-day-pass": "Day Pass",
+  "friday-day-pass": "Friday Day Pass",
+  "saturday-day-pass": "Saturday Day Pass",
+  "sunday-day-pass": "Sunday Day Pass",
 };
 
 const AdminDashboard = () => {

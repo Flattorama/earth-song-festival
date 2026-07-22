@@ -24,11 +24,23 @@ const TICKETS: Record<string, { name: string; description: string; amount: numbe
       "Full weekend access, all ceremonies & workshops, live music & performances, organic meals & refreshments available for purchase, fire circle gathering. Babies in arms attend free.",
     amount: 33300,
   },
+  "friday-day-pass": {
+    name: "Earth Song — Friday Day Pass",
+    description:
+      "Friday access (3pm–late), opening ceremony & fire circle, all Friday workshops & performances, organic meals & refreshments available for purchase",
+    amount: 10000,
+  },
   "saturday-day-pass": {
     name: "Earth Song — Saturday Day Pass",
     description:
       "Saturday access (9am–10pm), all Saturday ceremonies & workshops, live music & performances, organic meals & refreshments available for purchase",
     amount: 15000,
+  },
+  "sunday-day-pass": {
+    name: "Earth Song — Sunday Day Pass",
+    description:
+      "Sunday access (7am–4pm), all Sunday ceremonies & workshops, closing ceremony, organic meals & refreshments available for purchase",
+    amount: 10000,
   },
 };
 
@@ -39,12 +51,31 @@ const YOUTH_TICKETS: Record<string, Record<string, { label: string; amount: numb
     "2-7": { label: "Full Weekend Youth Pass — Ages 2–7", amount: 5000 },
     "under-2": { label: "Full Weekend Youth Pass — Under 2", amount: 0 },
   },
-  day: {
-    "13-18": { label: "Youth Day Pass — Ages 13–18", amount: 10000 },
-    "8-12": { label: "Youth Day Pass — Ages 8–12", amount: 5000 },
-    "2-7": { label: "Youth Day Pass — Ages 2–7", amount: 2500 },
-    "under-2": { label: "Youth Day Pass — Under 2", amount: 0 },
+  friday: {
+    "13-18": { label: "Friday Youth Day Pass — Ages 13–18", amount: 7500 },
+    "8-12": { label: "Friday Youth Day Pass — Ages 8–12", amount: 5000 },
+    "2-7": { label: "Friday Youth Day Pass — Ages 2–7", amount: 2500 },
+    "under-2": { label: "Friday Youth Day Pass — Under 2", amount: 0 },
   },
+  day: {
+    "13-18": { label: "Saturday Youth Day Pass — Ages 13–18", amount: 10000 },
+    "8-12": { label: "Saturday Youth Day Pass — Ages 8–12", amount: 5000 },
+    "2-7": { label: "Saturday Youth Day Pass — Ages 2–7", amount: 2500 },
+    "under-2": { label: "Saturday Youth Day Pass — Under 2", amount: 0 },
+  },
+  sunday: {
+    "13-18": { label: "Sunday Youth Day Pass — Ages 13–18", amount: 7500 },
+    "8-12": { label: "Sunday Youth Day Pass — Ages 8–12", amount: 5000 },
+    "2-7": { label: "Sunday Youth Day Pass — Ages 2–7", amount: 2500 },
+    "under-2": { label: "Sunday Youth Day Pass — Under 2", amount: 0 },
+  },
+};
+
+// Day-pass adults may only add youth passes for the same day.
+const DAY_PASS_YOUTH_REQUIREMENT: Record<string, string> = {
+  "friday-day-pass": "friday",
+  "saturday-day-pass": "day",
+  "sunday-day-pass": "sunday",
 };
 
 interface MinorTicketInput {
@@ -88,8 +119,9 @@ function validateMinorTickets(ticketType: string, rawTickets: unknown): Validate
       throw new Error("Each minor ticket requires a name, date of birth, pass type, and age range.");
     }
 
-    if (ticketType === "saturday-day-pass" && passType !== "day") {
-      throw new Error("Saturday Day Pass adults can only add youth day passes.");
+    const requiredYouthPass = DAY_PASS_YOUTH_REQUIREMENT[ticketType];
+    if (requiredYouthPass && passType !== requiredYouthPass) {
+      throw new Error("Day pass adults can only add youth passes for the same day.");
     }
 
     return {

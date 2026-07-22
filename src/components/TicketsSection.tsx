@@ -45,6 +45,22 @@ const ticketTiers = [
     expiryNotice: null,
   },
   {
+    name: "Friday Day Pass",
+    price: "CA$100",
+    originalPrice: null,
+    description: "A one-day pass for Friday only",
+    features: [
+      "Friday access (3pm–late)",
+      "Opening ceremony & fire circle",
+      "All Friday workshops & performances",
+      "Food & refreshments available for purchase",
+    ],
+    popular: false,
+    cta: "Get Day Pass",
+    ticketType: "friday-day-pass",
+    expiryNotice: null,
+  },
+  {
     name: "Saturday Day Pass",
     price: "CA$150",
     originalPrice: null,
@@ -60,7 +76,25 @@ const ticketTiers = [
     ticketType: "saturday-day-pass",
     expiryNotice: null,
   },
+  {
+    name: "Sunday Day Pass",
+    price: "CA$100",
+    originalPrice: null,
+    description: "A one-day pass for Sunday only",
+    features: [
+      "Sunday access (7am–4pm)",
+      "All Sunday ceremonies & workshops",
+      "Closing ceremony",
+      "Food & refreshments available for purchase",
+    ],
+    popular: false,
+    cta: "Get Day Pass",
+    ticketType: "sunday-day-pass",
+    expiryNotice: null,
+  },
 ];
+
+type TicketTier = (typeof ticketTiers)[number];
 
 const TicketsSection = () => {
   const [waiverOpen, setWaiverOpen] = useState(false);
@@ -81,6 +115,76 @@ const TicketsSection = () => {
   const visibleTiers = ticketTiers.filter(
     (tier) => !(tier.ticketType === "early-bird" && earlyBirdExpired)
   );
+  const weekendTiers = visibleTiers.filter(
+    (tier) => !tier.ticketType.endsWith("-day-pass")
+  );
+  const dayTiers = visibleTiers.filter((tier) =>
+    tier.ticketType.endsWith("-day-pass")
+  );
+
+  const renderTier = (tier: TicketTier) => (
+    <Card
+      key={tier.ticketType}
+      className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-xl ${
+        tier.popular
+          ? "border-primary bg-white shadow-lg"
+          : "border-border bg-white"
+      }`}
+    >
+      {tier.popular && (
+        <div className="absolute top-4 right-4">
+          <span className="bg-gold text-gold-foreground text-xs font-semibold px-3 py-1 rounded-full">
+            Best Value
+          </span>
+        </div>
+      )}
+      <CardHeader className="pb-4">
+        <h3 className="font-serif text-2xl font-semibold text-primary">
+          {tier.name}
+        </h3>
+        <div className="flex items-baseline gap-2 mt-2">
+          <span className="font-serif text-4xl font-bold text-foreground">
+            {tier.price}
+          </span>
+          {tier.originalPrice && (
+            <span className="text-muted-foreground line-through">
+              {tier.originalPrice}
+            </span>
+          )}
+        </div>
+        <p className="text-muted-foreground mt-2">{tier.description}</p>
+        {tier.expiryNotice && (
+          <p className="text-xs text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-2 inline-block">
+            {tier.expiryNotice}
+          </p>
+        )}
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-3 mb-6">
+          {tier.features.map((feature, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <Check className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+              <span className="text-foreground/80">{feature}</span>
+            </li>
+          ))}
+        </ul>
+        <Button
+          data-testid={`button-ticket-${tier.name.toLowerCase().replace(/\s+/g, "-")}`}
+          onClick={() => handleTicketClick(tier.ticketType, tier.name)}
+          className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
+            tier.popular
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground"
+          }`}
+        >
+          {tier.cta}
+        </Button>
+        <p className="text-sm text-center mt-2 opacity-70">
+          Pay in installments available at checkout via Klarna or Afterpay
+        </p>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <section id="tickets" className="py-20 md:py-28 bg-background">
@@ -100,73 +204,27 @@ const TicketsSection = () => {
 
         <div
           className={`grid grid-cols-1 ${
-            visibleTiers.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"
-          } gap-6 md:gap-8 max-w-5xl mx-auto`}
+            weekendTiers.length > 1 ? "md:grid-cols-2 max-w-3xl" : "max-w-md"
+          } gap-6 md:gap-8 mx-auto`}
         >
-          {visibleTiers.map((tier, index) => (
-            <Card
-              key={index}
-              className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:shadow-xl ${
-                tier.popular
-                  ? "border-primary bg-white shadow-lg"
-                  : "border-border bg-white"
-              }`}
-            >
-              {tier.popular && (
-                <div className="absolute top-4 right-4">
-                  <span className="bg-gold text-gold-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                    Best Value
-                  </span>
-                </div>
-              )}
-              <CardHeader className="pb-4">
-                <h3 className="font-serif text-2xl font-semibold text-primary">
-                  {tier.name}
-                </h3>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="font-serif text-4xl font-bold text-foreground">
-                    {tier.price}
-                  </span>
-                  {tier.originalPrice && (
-                    <span className="text-muted-foreground line-through">
-                      {tier.originalPrice}
-                    </span>
-                  )}
-                </div>
-                <p className="text-muted-foreground mt-2">{tier.description}</p>
-                {tier.expiryNotice && (
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-2 inline-block">
-                    {tier.expiryNotice}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 mb-6">
-                  {tier.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                      <span className="text-foreground/80">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  data-testid={`button-ticket-${tier.name.toLowerCase().replace(" ", "-")}`}
-                  onClick={() => handleTicketClick(tier.ticketType, tier.name)}
-                  className={`w-full h-12 rounded-lg text-base transition-all duration-300 ${
-                    tier.popular
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground"
-                  }`}
-                >
-                  {tier.cta}
-                </Button>
-                <p className="text-sm text-center mt-2 opacity-70">
-                  Pay in installments available at checkout via Klarna or Afterpay
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {weekendTiers.map(renderTier)}
         </div>
+
+        {dayTiers.length > 0 && (
+          <>
+            <div className="text-center mt-16 mb-8">
+              <p className="text-small-caps text-accent tracking-[0.2em] text-sm mb-3">
+                Day Passes
+              </p>
+              <p className="text-foreground/80">
+                Can’t join us for the whole weekend? Come for a day.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+              {dayTiers.map(renderTier)}
+            </div>
+          </>
+        )}
 
         <div className="text-center mt-12 space-y-2">
           <p className="text-muted-foreground">

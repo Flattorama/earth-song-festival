@@ -40,10 +40,28 @@ const youthPricing = {
       "under-2": { label: "Under 2", amount: 0 },
     },
   },
+  friday: {
+    label: "Friday Day Pass",
+    tiers: {
+      "13-18": { label: "Ages 13–18", amount: 75 },
+      "8-12": { label: "Ages 8–12", amount: 50 },
+      "2-7": { label: "Ages 2–7", amount: 25 },
+      "under-2": { label: "Under 2", amount: 0 },
+    },
+  },
   day: {
-    label: "Day Pass",
+    label: "Saturday Day Pass",
     tiers: {
       "13-18": { label: "Ages 13–18", amount: 100 },
+      "8-12": { label: "Ages 8–12", amount: 50 },
+      "2-7": { label: "Ages 2–7", amount: 25 },
+      "under-2": { label: "Under 2", amount: 0 },
+    },
+  },
+  sunday: {
+    label: "Sunday Day Pass",
+    tiers: {
+      "13-18": { label: "Ages 13–18", amount: 75 },
       "8-12": { label: "Ages 8–12", amount: 50 },
       "2-7": { label: "Ages 2–7", amount: 25 },
       "under-2": { label: "Under 2", amount: 0 },
@@ -54,6 +72,13 @@ const youthPricing = {
 type YouthPassType = keyof typeof youthPricing;
 type YouthAgeBand = keyof (typeof youthPricing)[YouthPassType]["tiers"];
 
+// Day-pass adults may only add youth passes for the same day.
+const forcedYouthPassType: Record<string, YouthPassType> = {
+  "friday-day-pass": "friday",
+  "saturday-day-pass": "day",
+  "sunday-day-pass": "sunday",
+};
+
 interface YouthTicketForm {
   id: string;
   minorName: string;
@@ -62,11 +87,11 @@ interface YouthTicketForm {
   ageBand: YouthAgeBand;
 }
 
-const createYouthTicket = (): YouthTicketForm => ({
+const createYouthTicket = (adultTicketType: string): YouthTicketForm => ({
   id: crypto.randomUUID(),
   minorName: "",
   minorDateOfBirth: "",
-  passType: "weekend",
+  passType: forcedYouthPassType[adultTicketType] ?? "weekend",
   ageBand: "13-18",
 });
 
@@ -217,7 +242,7 @@ const WaiverDialog = ({
   };
 
   const addYouthTicket = () => {
-    setYouthTickets((prev) => [...prev, createYouthTicket()]);
+    setYouthTickets((prev) => [...prev, createYouthTicket(ticketType)]);
   };
 
   const updateYouthTicket = <K extends keyof YouthTicketForm>(
@@ -441,13 +466,16 @@ const WaiverDialog = ({
                             onValueChange={(value: YouthPassType) =>
                               updateYouthTicket(ticket.id, "passType", value)
                             }
+                            disabled={Boolean(forcedYouthPassType[ticketType])}
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="weekend">Full Weekend</SelectItem>
-                              <SelectItem value="day">Day Pass</SelectItem>
+                              <SelectItem value="friday">Friday Day Pass</SelectItem>
+                              <SelectItem value="day">Saturday Day Pass</SelectItem>
+                              <SelectItem value="sunday">Sunday Day Pass</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
