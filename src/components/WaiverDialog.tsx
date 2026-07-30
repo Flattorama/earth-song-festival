@@ -266,7 +266,7 @@ const WaiverDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="flex max-h-[96dvh] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:max-h-[90vh] sm:w-full">
+      <DialogContent className="flex h-[96dvh] max-h-[96dvh] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:h-[min(90vh,52rem)] sm:max-h-[90vh] sm:w-full">
         <div className="sticky top-0 z-10 flex-shrink-0 border-b border-border bg-background px-4 pb-3 pt-4 sm:px-6 sm:pb-4 sm:pt-6">
           <DialogHeader>
             <DialogTitle className="font-serif text-lg text-primary sm:text-xl">
@@ -284,7 +284,7 @@ const WaiverDialog = ({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="relative min-h-[34dvh] flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-3 sm:min-h-0 sm:px-6 sm:pt-4"
+          className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-3 sm:px-6 sm:pt-4"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <WaiverContent />
@@ -314,7 +314,7 @@ const WaiverDialog = ({
           </div>
         )}
 
-        <div className="max-h-[50dvh] flex-shrink-0 space-y-3 overflow-y-auto border-t border-border px-4 py-3 sm:max-h-none sm:space-y-4 sm:overflow-visible sm:px-6 sm:py-5">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain border-t border-border px-4 py-3 sm:space-y-4 sm:px-6 sm:py-5">
           <h4 className="font-serif text-sm font-semibold text-primary sm:text-base">
             Attendee Information
           </h4>
@@ -560,8 +560,11 @@ const WaiverDialog = ({
               </div>
             )}
           </div>
+        </div>
 
-          <div className="flex items-start gap-2 pt-1 sm:gap-3">
+        {/* Pinned footer — consent + submit stay visible at every viewport size */}
+        <div className="flex-shrink-0 space-y-3 border-t border-border bg-background px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-start gap-2 sm:gap-3">
             <Checkbox
               id="waiver-agree"
               checked={agreed}
