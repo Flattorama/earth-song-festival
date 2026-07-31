@@ -16,40 +16,61 @@ export type Database = {
     Tables: {
       attendees: {
         Row: {
+          checked_in_at: string | null
           created_at: string
           email: string
           id: string
           is_buyer: boolean
+          is_minor: boolean
           name: string
           phone: string | null
           purchase_id: string
+          smartwaiver_id: string | null
+          smartwaiver_url: string | null
+          waiver_email_sent_at: string | null
           waiver_ip_address: string | null
+          waiver_last_reminder_at: string | null
+          waiver_reminder_count: number
           waiver_signed_at: string | null
           waiver_status: string
           waiver_token: string | null
         }
         Insert: {
+          checked_in_at?: string | null
           created_at?: string
           email: string
           id?: string
           is_buyer?: boolean
+          is_minor?: boolean
           name: string
           phone?: string | null
           purchase_id: string
+          smartwaiver_id?: string | null
+          smartwaiver_url?: string | null
+          waiver_email_sent_at?: string | null
           waiver_ip_address?: string | null
+          waiver_last_reminder_at?: string | null
+          waiver_reminder_count?: number
           waiver_signed_at?: string | null
           waiver_status?: string
           waiver_token?: string | null
         }
         Update: {
+          checked_in_at?: string | null
           created_at?: string
           email?: string
           id?: string
           is_buyer?: boolean
+          is_minor?: boolean
           name?: string
           phone?: string | null
           purchase_id?: string
+          smartwaiver_id?: string | null
+          smartwaiver_url?: string | null
+          waiver_email_sent_at?: string | null
           waiver_ip_address?: string | null
+          waiver_last_reminder_at?: string | null
+          waiver_reminder_count?: number
           waiver_signed_at?: string | null
           waiver_status?: string
           waiver_token?: string | null
@@ -293,6 +314,45 @@ export type Database = {
           youth_pass_type?: string
           youth_ticket_amount?: number
           youth_ticket_label?: string
+        }
+        Relationships: []
+      }
+      smartwaiver_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event: string
+          id: string
+          match_method: string | null
+          matched_attendee_id: string | null
+          processed_at: string | null
+          raw_payload: Json
+          unique_id: string
+          waiver_data: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event: string
+          id?: string
+          match_method?: string | null
+          matched_attendee_id?: string | null
+          processed_at?: string | null
+          raw_payload?: Json
+          unique_id: string
+          waiver_data?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event?: string
+          id?: string
+          match_method?: string | null
+          matched_attendee_id?: string | null
+          processed_at?: string | null
+          raw_payload?: Json
+          unique_id?: string
+          waiver_data?: Json | null
         }
         Relationships: []
       }
