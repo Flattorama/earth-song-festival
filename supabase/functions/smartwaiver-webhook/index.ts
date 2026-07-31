@@ -136,26 +136,43 @@ Deno.serve(async (req) => {
 
     const { externalId, autoTag, email } = extractIdentifiers(waiver);
 
-    // Given a purchase id, the attendee we want is that purchase's buyer.
-    const buyerAttendeeForPurchase = async (
-      candidate: string | null,
-    ): Promise<string | null> => {
-      const purchaseId = fromExternalId(candidate);
-      if (!purchaseId) return null;
-      const { data } = await supabase
+    /**
+     * Resolves an external_id or autoTag to an attendee.
+     *
+     * Current links carry the ATTENDEE id, so each adult on a multi-adult
+     * purchase is identified individually. Links emailed before that change
+     * carry the PURCHASE id, so the purchase lookup is kept as a fallback --
+     * without it, every waiver already sitting in someone's inbox would stop
+     * matching. Both are UUIDs, so we simply try the attendee table first.
+     */
+    const resolveAttendee = async (candidate: string | null): Promise<string | null> => {
+      const id = fromExternalId(candidate);
+      if (!id) return null;
+
+      const { data: direct } = await supabase
         .from("attendees")
         .select("id")
-        .eq("purchase_id", purchaseId)
+        .eq("id", id)
+        .maybeSingle();
+      if ((direct as { id: string } | null)?.id) {
+        return (direct as { id: string }).id;
+      }
+
+      // Legacy: the id was a purchase, so credit that purchase's buyer.
+      const { data: buyer } = await supabase
+        .from("attendees")
+        .select("id")
+        .eq("purchase_id", id)
         .eq("is_buyer", true)
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
-      return (data as { id: string } | null)?.id ?? null;
+      return (buyer as { id: string } | null)?.id ?? null;
     };
 
     const { attendeeId, method } = await matchAttendee({
-      external_id: () => buyerAttendeeForPurchase(externalId),
-      auto_tag: () => buyerAttendeeForPurchase(autoTag),
+      external_id: () => resolveAttendee(externalId),
+      auto_tag: () => resolveAttendee(autoTag),
       email: async () => {
         if (!email) return null;
         // Most recent still-pending attendee with this address. Someone who

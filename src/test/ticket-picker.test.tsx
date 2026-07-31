@@ -111,6 +111,129 @@ describe("changing the answer to No cannot leave a charge behind", () => {
   });
 });
 
+describe("adult quantity", () => {
+  const addAdult = () => fireEvent.click(screen.getByLabelText("One more adult ticket"));
+  const removeAdult = () => fireEvent.click(screen.getByLabelText("One fewer adult ticket"));
+
+  it("starts at one adult with no extra fields", () => {
+    renderPicker();
+    expect(screen.getByTestId("adult-count").textContent).toBe("1");
+    expect(screen.queryByTestId("adult-name-2")).toBeNull();
+  });
+
+  it("adds a name and email field per additional adult", () => {
+    renderPicker();
+    addAdult();
+    expect(screen.getByTestId("adult-count").textContent).toBe("2");
+    expect(screen.getByTestId("adult-name-2")).toBeTruthy();
+    expect(screen.getByTestId("adult-email-2")).toBeTruthy();
+
+    addAdult();
+    expect(screen.getByTestId("adult-name-3")).toBeTruthy();
+  });
+
+  it("drops the trailing rows when the quantity shrinks", () => {
+    renderPicker();
+    addAdult();
+    addAdult();
+    fireEvent.change(screen.getByTestId("adult-email-3"), {
+      target: { value: "third@example.com" },
+    });
+
+    removeAdult();
+
+    expect(screen.getByTestId("adult-count").textContent).toBe("2");
+    expect(screen.queryByTestId("adult-email-3")).toBeNull();
+  });
+
+  it("blocks submit until every additional adult is complete", () => {
+    renderPicker();
+    fillContact();
+    addAdult();
+
+    const submit = screen.getByText("Continue to Payment");
+    expect((submit as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.change(screen.getByTestId("adult-name-2"), { target: { value: "Ada" } });
+    expect((submit as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.change(screen.getByTestId("adult-email-2"), {
+      target: { value: "ada@example.com" },
+    });
+    expect((submit as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("rejects a malformed email", () => {
+    renderPicker();
+    fillContact();
+    addAdult();
+    fireEvent.change(screen.getByTestId("adult-name-2"), { target: { value: "Ada" } });
+    fireEvent.change(screen.getByTestId("adult-email-2"), { target: { value: "nope" } });
+
+    expect((screen.getByText("Continue to Payment") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  // attendees has UNIQUE (purchase_id, email), so a shared address would sell
+  // more tickets than adults tracked.
+  it("flags an email already used by the buyer", () => {
+    renderPicker();
+    fillContact();
+    addAdult();
+    fireEvent.change(screen.getByTestId("adult-name-2"), { target: { value: "Ada" } });
+    fireEvent.change(screen.getByTestId("adult-email-2"), {
+      target: { value: "BUYER@example.com" },
+    });
+
+    expect(screen.getByTestId("duplicate-email-error")).toBeTruthy();
+    expect((screen.getByText("Continue to Payment") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("flags two additional adults sharing an email", () => {
+    renderPicker();
+    fillContact();
+    addAdult();
+    addAdult();
+    fireEvent.change(screen.getByTestId("adult-name-2"), { target: { value: "Ada" } });
+    fireEvent.change(screen.getByTestId("adult-email-2"), { target: { value: "same@example.com" } });
+    fireEvent.change(screen.getByTestId("adult-name-3"), { target: { value: "Alan" } });
+    fireEvent.change(screen.getByTestId("adult-email-3"), { target: { value: "same@example.com" } });
+
+    expect(screen.getByTestId("duplicate-email-error")).toBeTruthy();
+  });
+
+  it("sends quantity 1 and an empty list for a solo buyer, exactly as before", async () => {
+    renderPicker();
+    fillContact();
+    fireEvent.click(screen.getByText("Continue to Payment"));
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalled());
+
+    const body = bodyOfLastCheckout();
+    expect(body.adultQuantity).toBe(1);
+    expect(body.additionalAdults).toEqual([]);
+  });
+
+  it("sends the whole party when there are three adults", async () => {
+    renderPicker();
+    fillContact();
+    addAdult();
+    addAdult();
+    fireEvent.change(screen.getByTestId("adult-name-2"), { target: { value: " Ada Lovelace " } });
+    fireEvent.change(screen.getByTestId("adult-email-2"), { target: { value: " ada@example.com " } });
+    fireEvent.change(screen.getByTestId("adult-name-3"), { target: { value: "Alan Turing" } });
+    fireEvent.change(screen.getByTestId("adult-email-3"), { target: { value: "alan@example.com" } });
+
+    fireEvent.click(screen.getByText("Continue to Payment"));
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalled());
+
+    const body = bodyOfLastCheckout();
+    expect(body.adultQuantity).toBe(3);
+    expect(body.additionalAdults).toEqual([
+      { name: "Ada Lovelace", email: "ada@example.com" },
+      { name: "Alan Turing", email: "alan@example.com" },
+    ]);
+  });
+});
+
 describe("the Yes path still prices correctly", () => {
   const addOne = (band: string) => {
     const row = screen.getByTestId(`youth-count-${band}`).parentElement!;
