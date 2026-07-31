@@ -9,48 +9,20 @@ import {
 } from "@/data/pricing";
 
 /**
- * A copy of YOUTH_TICKETS from supabase/functions/create-checkout/index.ts,
- * in CENTS.
+ * The real server tables, in CENTS.
  *
- * It has to be duplicated: that file is a Deno module importing from esm.sh, so
- * vitest cannot load it. Duplication is the point of this test rather than a
- * flaw in it -- if create-checkout changes and this fixture is not updated to
- * match, the parity assertions below fail and the mismatch is caught here
- * instead of on a customer's card.
+ * The task brief assumed these would have to be hand-copied into a fixture,
+ * because create-checkout/index.ts is a Deno module importing Stripe from
+ * esm.sh and vitest cannot load it. Extracting the catalog into a dependency-
+ * free module removed that constraint, so the test imports the genuine article
+ * instead. That is strictly stronger: a hand-copied fixture only fails when
+ * someone forgets to update the copy, whereas this fails the moment the server
+ * price and the browser price disagree, which is the risk that actually matters.
  */
-const SERVER_YOUTH_TICKETS_CENTS: Record<string, Record<string, { label: string; amount: number }>> = {
-  weekend: {
-    "13-18": { label: "Full Weekend Youth Pass — Ages 13–18", amount: 15000 },
-    "8-12": { label: "Full Weekend Youth Pass — Ages 8–12", amount: 10000 },
-    "2-7": { label: "Full Weekend Youth Pass — Ages 2–7", amount: 5000 },
-    "under-2": { label: "Full Weekend Youth Pass — Under 2", amount: 0 },
-  },
-  friday: {
-    "13-18": { label: "Friday Youth Day Pass — Ages 13–18", amount: 7500 },
-    "8-12": { label: "Friday Youth Day Pass — Ages 8–12", amount: 5000 },
-    "2-7": { label: "Friday Youth Day Pass — Ages 2–7", amount: 2500 },
-    "under-2": { label: "Friday Youth Day Pass — Under 2", amount: 0 },
-  },
-  day: {
-    "13-18": { label: "Saturday Youth Day Pass — Ages 13–18", amount: 10000 },
-    "8-12": { label: "Saturday Youth Day Pass — Ages 8–12", amount: 5000 },
-    "2-7": { label: "Saturday Youth Day Pass — Ages 2–7", amount: 2500 },
-    "under-2": { label: "Saturday Youth Day Pass — Under 2", amount: 0 },
-  },
-  sunday: {
-    "13-18": { label: "Sunday Youth Day Pass — Ages 13–18", amount: 7500 },
-    "8-12": { label: "Sunday Youth Day Pass — Ages 8–12", amount: 5000 },
-    "2-7": { label: "Sunday Youth Day Pass — Ages 2–7", amount: 2500 },
-    "under-2": { label: "Sunday Youth Day Pass — Under 2", amount: 0 },
-  },
-};
-
-/** Mirrors DAY_PASS_YOUTH_REQUIREMENT in create-checkout. */
-const SERVER_DAY_PASS_YOUTH_REQUIREMENT: Record<string, string> = {
-  "friday-day-pass": "friday",
-  "saturday-day-pass": "day",
-  "sunday-day-pass": "sunday",
-};
+import {
+  DAY_PASS_YOUTH_REQUIREMENT as SERVER_DAY_PASS_YOUTH_REQUIREMENT,
+  YOUTH_TICKETS as SERVER_YOUTH_TICKETS_CENTS,
+} from "../../supabase/functions/create-checkout/catalog.ts";
 
 describe("client/server youth pricing parity", () => {
   it("covers exactly the same pass types on both sides", () => {
