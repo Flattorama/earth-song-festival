@@ -4,6 +4,7 @@ import {
   RECORDABLE_PAYMENT_STATUSES,
   shouldRecordPayment,
 } from "../../supabase/functions/stripe-webhook/session.ts";
+import { orderPaymentIntentId } from "../../supabase/functions/stripe-webhook/order.ts";
 
 /**
  * Regression cover for a real production miss: a 100%-off promotion code
@@ -42,6 +43,35 @@ describe("shouldRecordPayment", () => {
     expect([...RECORDABLE_PAYMENT_STATUSES]).toEqual(["paid", "no_payment_required"]);
     for (const status of ["unpaid", "pending", "processing", "PAID", "Paid", "free"]) {
       expect(shouldRecordPayment("payment", status), `${status} must not record`).toBe(false);
+    }
+  });
+});
+
+/**
+ * The second half of the same failure. Getting past the payment_status gate only
+ * moved the problem one line down: stripe_orders.payment_intent_id is NOT NULL,
+ * a zero-amount session has no payment intent, the insert threw, and the handler
+ * returned before creating the purchase. Two stacked bugs, both silent.
+ */
+describe("orderPaymentIntentId", () => {
+  it("uses the real payment intent for a paid ticket", () => {
+    expect(orderPaymentIntentId("pi_123", "cs_abc")).toBe("pi_123");
+  });
+
+  it("never returns null for a comped ticket, so the NOT NULL insert succeeds", () => {
+    expect(orderPaymentIntentId(null, "cs_abc")).toBe("cs_abc");
+    expect(orderPaymentIntentId(undefined, "cs_abc")).toBe("cs_abc");
+  });
+
+  it("stays traceable to the checkout that produced it", () => {
+    expect(orderPaymentIntentId(null, "cs_test_zero_amount")).toContain("cs_test_zero_amount");
+  });
+
+  it("returns a non-empty string for every input", () => {
+    for (const pi of [null, undefined, "", "pi_1"]) {
+      const result = orderPaymentIntentId(pi as string | null, "cs_abc");
+      expect(typeof result).toBe("string");
+      expect(result.length).toBeGreaterThan(0);
     }
   });
 });
