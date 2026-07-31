@@ -3,6 +3,7 @@ import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
 import { parseAdultMetadata, placeholderAdultEmail } from './adults.ts';
+import { isSkippedPaymentSession, shouldRecordPayment } from './session.ts';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -94,7 +95,7 @@ async function handleEvent(event: Stripe.Event) {
     if (isSubscription) {
       console.info(`Starting subscription sync for customer: ${customerId}`);
       await syncCustomerFromStripe(customerId);
-    } else if (mode === 'payment' && payment_status === 'paid') {
+    } else if (shouldRecordPayment(mode, payment_status)) {
       try {
         const {
           id: checkout_session_id,
@@ -124,6 +125,12 @@ async function handleEvent(event: Stripe.Event) {
       } catch (error) {
         console.error('Error processing one-time payment:', error);
       }
+    } else if (isSkippedPaymentSession(mode, payment_status)) {
+      // Loud on purpose. A dropped session used to leave no trace at all, which
+      // is how comped tickets went missing.
+      console.error(
+        `[stripe-webhook] NOT recording session ${session.id}: mode=${mode} payment_status=${payment_status}. No purchase, attendees or waiver email were created.`,
+      );
     }
   }
 }
