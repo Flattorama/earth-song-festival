@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Earth Song — Registration Desk</title>
+<style>
+  :root {
+    --bg: #f7f4ee;
+    --card: #ffffff;
+    --ink: #23291f;
+    --muted: #6d7566;
+    --line: #e2ddd1;
+    --green: #3f5d3a;
+    --green-soft: #eaf0e5;
+    --gold: #b8892b;
+    --gold-soft: #fdf4e0;
+    --red: #a2402f;
+    --red-soft: #fbeae6;
+    --blue-soft: #e9eff5;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink);
+    font-size: 16px; line-height: 1.45;
+    padding-bottom: 3rem;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 0.75rem; }
+
+  /* ---------- status bar ---------- */
+  #statusbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--green); color: #fff;
+    padding: 0.5rem 0.75rem;
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    font-size: 0.8rem;
+  }
+  #statusbar strong { font-size: 0.95rem; font-weight: 600; letter-spacing: 0.02em; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.on { background: #8ed06a; }
+  .dot.off { background: #f0b23f; }
+  #statusbar .spacer { flex: 1; }
+  #statusbar button {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 999px; padding: 0.3rem 0.8rem;
+    font-size: 0.78rem; font-weight: 600;
+  }
+  #queuebadge { background: var(--gold); color: #fff; border-radius: 999px; padding: 0.15rem 0.55rem; font-weight: 700; }
+
+  /* ---------- counters ---------- */
+  #counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin: 0.75rem 0; }
+  .counter { background: var(--card); border: 1px solid var(--line); border-radius: 0.75rem; padding: 0.6rem 0.5rem; text-align: center; }
+  .counter b { display: block; font-size: 1.55rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .counter span { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .counter.ok b { color: var(--green); }
+  .counter.warn b { color: var(--red); }
+
+  /* ---------- search + filters ---------- */
+  #search {
+    width: 100%; padding: 0.95rem 1rem; font-size: 1.15rem;
+    border: 2px solid var(--line); border-radius: 0.75rem;
+    background: var(--card); color: var(--ink);
+  }
+  #search:focus { outline: none; border-color: var(--green); }
+  #filters { display: flex; gap: 0.4rem; margin: 0.6rem 0 0.9rem; overflow-x: auto; padding-bottom: 0.2rem; }
+  .chip {
+    flex: none; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+    border-radius: 999px; padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: 600;
+  }
+  .chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+  /* ---------- person cards ---------- */
+  .person { background: var(--card); border: 1px solid var(--line); border-left-width: 5px; border-radius: 0.75rem; padding: 0.8rem 0.9rem; margin-bottom: 0.6rem; }
+  .person.signed { border-left-color: var(--green); }
+  .person.pending { border-left-color: var(--red); }
+  .person.done { border-left-color: #9aa694; opacity: 0.6; }
+  .person h3 { margin: 0 0 0.15rem; font-size: 1.1rem; font-weight: 650; }
+  .person .meta { font-size: 0.83rem; color: var(--muted); word-break: break-word; }
+  .badges { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.45rem 0 0; }
+  .badge { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; padding: 0.2rem 0.55rem; border-radius: 999px; text-transform: uppercase; }
+  .badge.signed { background: var(--green-soft); color: var(--green); }
+  .badge.pending { background: var(--red-soft); color: var(--red); }
+  .badge.paper { background: var(--gold-soft); color: var(--gold); }
+  .badge.in { background: var(--blue-soft); color: #3c5a75; }
+  .badge.youth { background: var(--gold-soft); color: var(--gold); }
+  .badge.short { background: var(--red-soft); color: var(--red); }
+  .actions { display: flex; gap: 0.45rem; margin-top: 0.7rem; flex-wrap: wrap; }
+  .actions button { flex: 1 1 auto; min-height: 2.9rem; min-width: 8rem; border-radius: 0.6rem; font-size: 0.92rem; font-weight: 650; border: 1px solid transparent; }
+  .btn-in { background: var(--green); color: #fff; }
+  .btn-paper { background: var(--gold-soft); color: var(--gold); border-color: #eddfbd; }
+  .btn-undo { background: transparent; color: var(--muted); border-color: var(--line); }
+  .note { background: var(--red-soft); color: var(--red); font-size: 0.8rem; border-radius: 0.5rem; padding: 0.45rem 0.6rem; margin-top: 0.5rem; }
+
+  /* ---------- gate / login ---------- */
+  #gate { max-width: 380px; margin: 4rem auto; background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: 1.5rem; }
+  #gate h1 { font-size: 1.25rem; margin: 0 0 0.4rem; }
+  #gate p { font-size: 0.87rem; color: var(--muted); margin: 0 0 1rem; }
+  #gate input { width: 100%; padding: 0.85rem; font-size: 1rem; border: 2px solid var(--line); border-radius: 0.6rem; margin-bottom: 0.7rem; }
+  #gate button { width: 100%; min-height: 3rem; background: var(--green); color: #fff; border: none; border-radius: 0.6rem; font-size: 1rem; font-weight: 650; }
+  .err { color: var(--red); font-size: 0.85rem; margin-top: 0.6rem; }
+  .empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; font-size: 0.95rem; }
+  .hidden { display: none !important; }
+  #kiosklink { display: block; text-align: center; margin: 1.25rem 0 0; font-size: 0.85rem; color: var(--green); font-weight: 600; }
+  footer { text-align: center; font-size: 0.72rem; color: var(--muted); margin-top: 1.5rem; }
+  footer button { background: none; border: none; color: var(--muted); text-decoration: underline; font-size: 0.72rem; }
+</style>
+</head>
+<body>
+
+<!-- ============ TOKEN GATE ============ -->
+<div id="gate">
+  <h1>Earth Song — Registration Desk</h1>
+  <p>Enter the desk code you were given. It is stored on this device only.</p>
+  <input id="tokeninput" type="password" placeholder="Desk code" autocomplete="off" />
+  <button id="tokenbtn">Load roster</button>
+  <div id="gateerr" class="err hidden"></div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <div id="statusbar">
+    <span class="dot" id="netdot"></span>
+    <strong id="netlabel">Online</strong>
+    <span id="synced">never synced</span>
+    <span id="queuebadge" class="hidden">0 queued</span>
+    <span class="spacer"></span>
+    <button id="syncbtn">Sync</button>
+  </div>
+
+  <div class="wrap">
+    <div id="counters">
+      <div class="counter"><b id="c-expected">0</b><span>Expected</span></div>
+      <div class="counter ok"><b id="c-signed">0</b><span>Signed</span></div>
+      <div class="counter warn"><b id="c-pending">0</b><span>No waiver</span></div>
+      <div class="counter"><b id="c-in">0</b><span>Checked in</span></div>
+    </div>
+
+    <input id="search" type="search" placeholder="Search name or email…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+
+    <div id="filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="pending">No waiver</button>
+      <button class="chip" data-filter="signed">Signed</button>
+      <button class="chip" data-filter="notin">Not checked in</button>
+      <button class="chip" data-filter="in">Checked in</button>
+    </div>
+
+    <div id="list"></div>
+
+    <a id="kiosklink" href="#" target="_blank" rel="noopener">Open Smartwaiver kiosk →</a>
+
+    <footer>
+      Cached locally · works offline · check-ins sync when signal returns<br />
+      <button id="forget">Forget this device</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------- config
+  var SUPABASE_URL = "https://bdkaqgvzjkixwakzploq.supabase.co";
+  var ROSTER_URL = SUPABASE_URL + "/functions/v1/checkin-roster";
+  var MARK_URL = SUPABASE_URL + "/functions/v1/checkin-mark";
+  // Earth Song Festival Retreat — Release of Liability and Waiver of Claims
+  var SMARTWAIVER_TEMPLATE_ID = "9cayh4ucp8knmwybehfh4a";
+
+  var K_TOKEN = "es_checkin_token";
+  var K_ROSTER = "es_checkin_roster";
+  var K_QUEUE = "es_checkin_queue";
+  var K_SYNCED = "es_checkin_synced_at";
+
+  // ---------------------------------------------------------------- state
+  var token = localStorage.getItem(K_TOKEN) || "";
+  var roster = [];
+  var totals = {};
+  var queue = [];
+  var filter = "all";
+  var query = "";
+  // Guards against two overlapping flushes racing each other. Without this,
+  // a manual sync and the 2-minute timer can both send the same batch and the
+  // second one's response can delete a check-in queued in between. That would
+  // be silent data loss at the gate, which is the one thing this tool must
+  // never do.
+  var inFlight = false;
+
+  try { roster = JSON.parse(localStorage.getItem(K_ROSTER) || "[]"); } catch (e) { roster = []; }
+  try { queue = JSON.parse(localStorage.getItem(K_QUEUE) || "[]"); } catch (e) { queue = []; }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------------------------------------------------------------- helpers
+  function save() {
+    localStorage.setItem(K_ROSTER, JSON.stringify(roster));
+    localStorage.setItem(K_QUEUE, JSON.stringify(queue));
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function timeOnly(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+
+  function relative(iso) {
+    if (!iso) return "never synced";
+    var mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return "synced just now";
+    if (mins === 1) return "synced 1 min ago";
+    if (mins < 60) return "synced " + mins + " min ago";
+    var hrs = Math.round(mins / 60);
+    return "synced " + hrs + (hrs === 1 ? " hr ago" : " hrs ago");
+  }
+
+  // ---------------------------------------------------------------- network
+  function fetchRoster() {
+    return fetch(ROSTER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-checkin-token": token },
+      body: "{}"
+    }).then(function (res) {
+      if (res.status === 403) throw new Error("Desk code rejected.");
+      if (!res.ok) throw new Error("Server returned " + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (data.error) throw new Error(data.error);
+      // Re-apply anything still queued so the screen never appears to "undo"
+      // a check-in the desk just made.
+      roster = data.roster || [];
+      totals = data.totals || {};
+      applyQueueLocally();
+      localStorage.setItem(K_SYNCED, new Date().toISOString());
+      save();
+      return data;
+    });
+  }
+
+  function flushQueue() {
+    if (queue.length === 0 || inFlight) return Promise.resolve();
+    inFlight = true;
+    var batch = queue.slice(0, 200);
+    // Match by our own uid, never by array index — the queue can grow while
+    // this request is in the air.
+    var sentUids = batch.map(function (a) { return a.uid; });
+
+    return fetch(MARK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-checkin-token": token },
+      body: JSON.stringify({ actions: batch })
+    }).then(function (res) {
+      if (!res.ok) throw new Error("Sync failed (" + res.status + ")");
+      return res.json();
+    }).then(function (data) {
+      // Anything the server rejected stays queued for the next attempt.
+      var failedKeys = {};
+      (data.failed || []).forEach(function (f) {
+        failedKeys[f.attendeeId + "|" + f.type] = true;
+      });
+      queue = queue.filter(function (a) {
+        if (sentUids.indexOf(a.uid) === -1) return true;          // queued after we sent
+        return !!failedKeys[a.attendeeId + "|" + a.type];          // keep only failures
+      });
+      save();
+      inFlight = false;
+    }).catch(function (err) {
+      inFlight = false;
+      throw err;
+    });
+  }
+
+  function sync(showErrors) {
+    if (!navigator.onLine) { render(); return Promise.resolve(); }
+    $("syncbtn").textContent = "Syncing…";
+    var flushError = null;
+    // Always refresh the roster, even if the queue is stuck. A single
+    // permanently-failing action must not block every future roster update.
+    return flushQueue()
+      .catch(function (err) { flushError = err; })
+      .then(fetchRoster)
+      .then(function () {
+        $("syncbtn").textContent = "Sync";
+        render();
+        if (flushError && showErrors) throw flushError;
+      })
+      .catch(function (err) {
+        $("syncbtn").textContent = "Sync";
+        render();
+        if (showErrors) alert("Could not sync: " + err.message + "\n\nYou can keep working — check-ins are saved on this device and will sync later.");
+      });
+  }
+
+  // ---------------------------------------------------------------- actions
+  var uidCounter = 0;
+
+  function enqueue(attendeeId, type) {
+    uidCounter += 1;
+    queue.push({
+      uid: Date.now() + "-" + uidCounter,
+      attendeeId: attendeeId,
+      type: type,
+      at: new Date().toISOString()
+    });
+    applyQueueLocally();
+    save();
+    render();
+    if (navigator.onLine) flushQueue().then(function () { render(); }).catch(function () { render(); });
+  }
+
+  function applyQueueLocally() {
+    queue.forEach(function (a) {
+      var person = roster.find(function (r) { return r.id === a.attendeeId; });
+      if (!person) return;
+      if (a.type === "check-in") person.checkedInAt = a.at;
+      if (a.type === "undo-check-in") person.checkedInAt = null;
+      if (a.type === "paper-waiver") {
+        person.waiverStatus = "signed";
+        person.waiverSignedAt = a.at;
+        person.smartwaiverId = "PAPER-AT-DESK";
+        person.checkedInAt = a.at;
+      }
+      if (a.type === "undo-paper-waiver") {
+        person.waiverStatus = "pending";
+        person.waiverSignedAt = null;
+        person.smartwaiverId = null;
+        person.checkedInAt = null;
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------- render
+  function visible() {
+    var q = query.trim().toLowerCase();
+    return roster.filter(function (p) {
+      if (q) {
+        var hay = (p.name + " " + p.email).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      if (filter === "pending") return p.waiverStatus !== "signed";
+      if (filter === "signed") return p.waiverStatus === "signed";
+      if (filter === "in") return !!p.checkedInAt;
+      if (filter === "notin") return !p.checkedInAt;
+      return true;
+    }).sort(function (a, b) {
+      // Not-yet-checked-in first — that is who is standing in front of you.
+      if (!!a.checkedInAt !== !!b.checkedInAt) return a.checkedInAt ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  function render() {
+    // status bar
+    var online = navigator.onLine;
+    $("netdot").className = "dot " + (online ? "on" : "off");
+    $("netlabel").textContent = online ? "Online" : "Offline";
+    $("synced").textContent = relative(localStorage.getItem(K_SYNCED));
+    var qb = $("queuebadge");
+    if (queue.length > 0) {
+      qb.classList.remove("hidden");
+      qb.textContent = queue.length + " queued";
+    } else {
+      qb.classList.add("hidden");
+    }
+
+    // counters — computed from the cached roster so they stay honest offline
+    var signed = roster.filter(function (p) { return p.waiverStatus === "signed"; }).length;
+    var checkedIn = roster.filter(function (p) { return !!p.checkedInAt; }).length;
+    $("c-expected").textContent = totals.expectedHeadcount || roster.length;
+    $("c-signed").textContent = signed;
+    $("c-pending").textContent = roster.length - signed;
+    $("c-in").textContent = checkedIn;
+
+    // list
+    var rows = visible();
+    var html = "";
+
+    if (roster.length === 0) {
+      html = '<div class="empty">No roster cached yet. Tap <b>Sync</b> while you have signal.</div>';
+    } else if (rows.length === 0) {
+      html = '<div class="empty">No matches.</div>';
+    } else {
+      rows.forEach(function (p) {
+        var isSigned = p.waiverStatus === "signed";
+        var isPaper = p.smartwaiverId === "PAPER-AT-DESK";
+        var cls = p.checkedInAt ? "done" : (isSigned ? "signed" : "pending");
+
+        var badges = "";
+        badges += isSigned
+          ? '<span class="badge ' + (isPaper ? "paper" : "signed") + '">' + (isPaper ? "Paper waiver" : "Waiver signed") + "</span>"
+          : '<span class="badge pending">No waiver</span>';
+        if (p.checkedInAt) badges += '<span class="badge in">In ' + esc(timeOnly(p.checkedInAt)) + "</span>";
+        if (p.youthCount > 0) badges += '<span class="badge youth">' + p.youthCount + " youth</span>";
+        if (p.partyShortfall > 0) badges += '<span class="badge short">' + p.partyShortfall + " unaccounted</span>";
+
+        var actions = "";
+        if (!isSigned) {
+          actions += '<button class="btn-paper" data-act="paper-waiver" data-id="' + p.id + '">Signed on paper</button>';
+        } else if (isPaper) {
+          // Mis-taps happen. A paper waiver must be reversible or the
+          // post-festival scan-and-file list fills up with phantom entries.
+          actions += '<button class="btn-undo" data-act="undo-paper-waiver" data-id="' + p.id + '">Undo paper waiver</button>';
+        }
+        if (p.checkedInAt) {
+          actions += '<button class="btn-undo" data-act="undo-check-in" data-id="' + p.id + '">Undo check-in</button>';
+        } else {
+          actions += '<button class="btn-in" data-act="check-in" data-id="' + p.id + '">Check in</button>';
+        }
+
+        var note = "";
+        if (!isSigned) {
+          note = '<div class="note">No waiver on file. Have them sign on the tablet, or use the paper copy, before issuing a wristband.</div>';
+        } else if (p.partyShortfall > 0) {
+          note = '<div class="note">Paid for ' + p.adultsExpected + ' adult' + (p.adultsExpected === 1 ? "" : "s") +
+            ' but only ' + p.adultRecords + ' waiver record' + (p.adultRecords === 1 ? "" : "s") +
+            ' on file. Ask who else is coming — each adult needs their own waiver.</div>';
+        }
+
+        var legacy = p.legacyMinors && p.legacyMinors.length
+          ? '<div class="meta">Kids expected: ' + esc(p.legacyMinors.join(", ")) + "</div>"
+          : "";
+
+        html += '<div class="person ' + cls + '">' +
+          "<h3>" + esc(p.name) + "</h3>" +
+          '<div class="meta">' + esc(p.email) + (p.phone ? " · " + esc(p.phone) : "") + "</div>" +
+          '<div class="meta">' + esc(p.ticketLabel) + "</div>" +
+          legacy +
+          '<div class="badges">' + badges + "</div>" +
+          note +
+          '<div class="actions">' + actions + "</div>" +
+          "</div>";
+      });
+    }
+
+    $("list").innerHTML = html;
+  }
+
+  // ---------------------------------------------------------------- events
+  $("list").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    var act = btn.getAttribute("data-act");
+    var id = btn.getAttribute("data-id");
+    if (act === "paper-waiver" && !confirm("Record a PAPER waiver for this person? Keep the signed sheet for scanning after the festival.")) return;
+    if (act === "undo-paper-waiver" && !confirm("Undo the paper waiver? This person will show as having NO waiver again.")) return;
+    enqueue(id, act);
+  });
+
+  $("search").addEventListener("input", function (e) { query = e.target.value; render(); });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (chip) {
+    chip.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (c) { c.classList.remove("active"); });
+      chip.classList.add("active");
+      filter = chip.getAttribute("data-filter");
+      render();
+    });
+  });
+
+  $("syncbtn").addEventListener("click", function () { sync(true); });
+
+  $("forget").addEventListener("click", function () {
+    if (queue.length > 0 && !confirm(queue.length + " check-in(s) have not synced yet. Clear anyway?")) return;
+    if (!confirm("Remove the roster and desk code from this device?")) return;
+    [K_TOKEN, K_ROSTER, K_QUEUE, K_SYNCED].forEach(function (k) { localStorage.removeItem(k); });
+    location.reload();
+  });
+
+  window.addEventListener("online", function () { render(); sync(false); });
+  window.addEventListener("offline", render);
+
+  // ---------------------------------------------------------------- boot
+  function start() {
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("kiosklink").href = "https://waiver.smartwaiver.com/w/" + SMARTWAIVER_TEMPLATE_ID + "/kiosk/";
+    render();
+    sync(false);
+    // Keep the roster warm without hammering the function.
+    setInterval(function () { if (navigator.onLine) sync(false); }, 120000);
+  }
+
+  $("tokenbtn").addEventListener("click", function () {
+    var val = $("tokeninput").value.trim();
+    if (!val) return;
+    token = val;
+    $("tokenbtn").textContent = "Checking…";
+    fetch(ROSTER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-checkin-token": token },
+      body: "{}"
+    }).then(function (res) {
+      $("tokenbtn").textContent = "Load roster";
+      if (res.status === 403) {
+        $("gateerr").textContent = "That code was rejected.";
+        $("gateerr").classList.remove("hidden");
+        return;
+      }
+      if (!res.ok) {
+        // Don't store a code on the strength of a 500 — that hides a server
+        // misconfiguration behind an empty roster.
+        $("gateerr").textContent = "Server error (" + res.status + "). Check that CHECKIN_TOKEN is set in Supabase.";
+        $("gateerr").classList.remove("hidden");
+        return;
+      }
+      localStorage.setItem(K_TOKEN, token);
+      start();
+    }).catch(function () {
+      $("tokenbtn").textContent = "Load roster";
+      $("gateerr").textContent = "No connection. Connect to wifi or data, then try again.";
+      $("gateerr").classList.remove("hidden");
+    });
+  });
+
+  $("tokeninput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") $("tokenbtn").click();
+  });
+
+  if (token) start();
+})();
+</script>
+</body>
+</html>
