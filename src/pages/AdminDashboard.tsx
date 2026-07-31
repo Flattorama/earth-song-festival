@@ -6,10 +6,16 @@ import {
   ShieldCheck,
   Clock,
   Copy,
+  FileText,
   Send,
   TriangleAlert,
+  Undo2,
 } from "lucide-react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +33,7 @@ interface AttendeeRow {
   is_minor: boolean;
   waiver_status: string;
   waiver_signed_at: string | null;
+  waiver_signed_method: string | null;
   waiver_email_sent_at: string | null;
   waiver_reminder_count: number | null;
   waiver_last_reminder_at: string | null;
@@ -87,7 +94,14 @@ interface AdminDashboardResponse {
   minorWaivers?: MinorWaiverRow[];
   unmatchedWaivers?: UnmatchedWaiverRow[];
   resent?: boolean;
+  updated?: boolean;
   error?: string;
+}
+
+/** The attendee a confirm dialog is currently open for, and what it will do. */
+interface StatusChangeIntent {
+  attendee: AttendeeRow;
+  status: "signed" | "pending";
 }
 
 const TICKET_LABELS: Record<string, string> = {
@@ -105,6 +119,8 @@ const AdminDashboard = () => {
   const [unmatchedWaivers, setUnmatchedWaivers] = useState<UnmatchedWaiverRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [statusChangingId, setStatusChangingId] = useState<string | null>(null);
+  const [pendingIntent, setPendingIntent] = useState<StatusChangeIntent | null>(null);
   // Pending is the call list, so it is what you want on opening the page.
   const [filter, setFilter] = useState<"all" | "signed" | "pending">("pending");
   const [search, setSearch] = useState("");
@@ -178,6 +194,46 @@ const AdminDashboard = () => {
       toast.error(`Could not resend to ${attendee.email}`);
     } finally {
       setResendingId(null);
+    }
+  };
+
+  /**
+   * Flips a waiver status by hand, for a paper waiver collected at the gate.
+   * The server decides whether the change is legal -- notably it refuses to
+   * revert anything that carries a real Smartwaiver signature.
+   */
+  const handleSetStatus = async ({ attendee, status }: StatusChangeIntent) => {
+    setStatusChangingId(attendee.id);
+    try {
+      const { data, error } = await supabase.functions.invoke<AdminDashboardResponse>(
+        "get-admin-dashboard-data",
+        {
+          headers: { "X-Admin-Token": adminToken },
+          body: { action: "set-waiver-status", attendeeId: attendee.id, status },
+        }
+      );
+      if (error || data?.error) {
+        // A rejected change comes back as a 409, so the explanation is in the
+        // error's response body rather than in data.
+        let reason = data?.error;
+        if (!reason && error instanceof FunctionsHttpError) {
+          const body = await error.context.json().catch(() => null);
+          reason = typeof body?.error === "string" ? body.error : undefined;
+        }
+        toast.error(reason || `Could not update ${attendee.name || attendee.email}`);
+      } else {
+        toast.success(
+          status === "signed"
+            ? `Paper waiver recorded for ${attendee.name || attendee.email}`
+            : `${attendee.name || attendee.email} is back to pending`
+        );
+        fetchData();
+      }
+    } catch {
+      toast.error(`Could not update ${attendee.name || attendee.email}`);
+    } finally {
+      setStatusChangingId(null);
+      setPendingIntent(null);
     }
   };
 
@@ -431,10 +487,20 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>
                               {a.waiver_status === "signed" ? (
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
-                                  <ShieldCheck className="w-3 h-3" />
-                                  Signed
-                                </span>
+                                a.waiver_signed_method === "paper" ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full"
+                                    title="Recorded by staff — there is a paper waiver to file"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                    Signed · paper
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                                    <ShieldCheck className="w-3 h-3" />
+                                    Signed
+                                  </span>
+                                )
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">
                                   <Clock className="w-3 h-3" />
@@ -459,23 +525,65 @@ const AdminDashboard = () => {
                               {formatDate(a.waiver_signed_at)}
                             </TableCell>
                             <TableCell className="text-right">
-                              {a.waiver_status !== "signed" && !a.is_minor && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={resendingId === a.id}
-                                  onClick={() => handleResend(a)}
-                                >
-                                  {resendingId === a.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Send className="w-3.5 h-3.5 mr-1.5" />
-                                      Resend
-                                    </>
+                              <div className="flex justify-end gap-2">
+                                {a.waiver_status !== "signed" && !a.is_minor && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={resendingId === a.id}
+                                      onClick={() => handleResend(a)}
+                                    >
+                                      {resendingId === a.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Send className="w-3.5 h-3.5 mr-1.5" />
+                                          Resend
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={statusChangingId === a.id}
+                                      onClick={() =>
+                                        setPendingIntent({ attendee: a, status: "signed" })
+                                      }
+                                    >
+                                      {statusChangingId === a.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <FileText className="w-3.5 h-3.5 mr-1.5" />
+                                          Mark signed (paper)
+                                        </>
+                                      )}
+                                    </Button>
+                                  </>
+                                )}
+                                {a.waiver_status === "signed" &&
+                                  a.waiver_signed_method === "paper" &&
+                                  !a.smartwaiver_id && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={statusChangingId === a.id}
+                                      onClick={() =>
+                                        setPendingIntent({ attendee: a, status: "pending" })
+                                      }
+                                    >
+                                      {statusChangingId === a.id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                                          Undo
+                                        </>
+                                      )}
+                                    </Button>
                                   )}
-                                </Button>
-                              )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -602,6 +710,65 @@ const AdminDashboard = () => {
           </>
         )}
       </div>
+
+      <AlertDialog
+        open={pendingIntent !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingIntent(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingIntent?.status === "signed"
+                ? "Record a paper waiver?"
+                : "Undo this paper waiver?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingIntent?.status === "signed" ? (
+                <>
+                  This marks{" "}
+                  <strong>
+                    {pendingIntent?.attendee.name || pendingIntent?.attendee.email}
+                  </strong>{" "}
+                  as signed because a paper waiver was collected in person. Keep the
+                  physical copy — it is the legal record. Reminder emails stop
+                  immediately.
+                </>
+              ) : (
+                <>
+                  This puts{" "}
+                  <strong>
+                    {pendingIntent?.attendee.name || pendingIntent?.attendee.email}
+                  </strong>{" "}
+                  back to pending and clears the signed timestamp. They will start
+                  receiving waiver reminders again.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                // The dialog closes on click by default; keep it open until the
+                // request finishes so the spinner is visible.
+                event.preventDefault();
+                if (pendingIntent) handleSetStatus(pendingIntent);
+              }}
+              disabled={statusChangingId !== null}
+            >
+              {statusChangingId !== null ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : pendingIntent?.status === "signed" ? (
+                "Mark signed"
+              ) : (
+                "Undo"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
