@@ -181,15 +181,16 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // Buyers now start pending: the waiver is signed on Smartwaiver after
+  // payment, not inside the old checkout dialog.
   const { error: attendeeError } = await supabase.from('attendees').upsert(
     {
       purchase_id: purchase.id,
       name: buyerName,
       email: buyerEmail,
-      phone: metadata.attendee_phone || "",
+      phone: metadata.attendee_phone || session.customer_details?.phone || "",
       is_buyer: true,
-      waiver_status: 'signed',
-      waiver_signed_at: new Date().toISOString(),
+      waiver_status: 'pending',
     },
     { onConflict: 'purchase_id,email' },
   );
@@ -198,36 +199,42 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
     console.error('Error upserting attendee:', attendeeError);
   }
 
-  const { error: waiverError } = await supabase
-    .from('waiver_acceptances')
-    .update({ stripe_session_id: session.id })
-    .eq('attendee_email', buyerEmail)
-    .eq('ticket_type', ticketType)
-    .is('stripe_session_id', null);
+  await sendWaiverEmail(purchase.id);
+}
 
-  if (waiverError) {
-    console.error('Error linking waiver acceptance:', waiverError);
-  }
+/**
+ * Kicks off the waiver email. Deliberately swallows every failure: throwing
+ * here would surface as a non-2xx to Stripe, which then retries the whole
+ * payment webhook. waiver-reconcile sweeps up anything that did not send.
+ */
+async function sendWaiverEmail(purchaseId: string) {
+  const internalToken = Deno.env.get('INTERNAL_FUNCTION_TOKEN');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
-  const { data: minorWaivers, error: minorWaiversError } = await supabase
-    .from('minor_waiver_acceptances')
-    .select('id, minor_name, guardian_email')
-    .eq('stripe_session_id', session.id);
-
-  if (minorWaiversError) {
-    console.error('Error loading minor waiver acceptances:', minorWaiversError);
+  if (!internalToken || !supabaseUrl) {
+    console.error(
+      '[stripe-webhook] INTERNAL_FUNCTION_TOKEN or SUPABASE_URL missing; no waiver email sent',
+    );
     return;
   }
 
-  if (minorWaivers && minorWaivers.length > 0) {
-    const { error: minorLinkError } = await supabase
-      .from('minor_waiver_acceptances')
-      .update({ purchase_id: purchase.id })
-      .eq('stripe_session_id', session.id);
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-waiver-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-token': internalToken,
+      },
+      body: JSON.stringify({ purchaseId }),
+    });
 
-    if (minorLinkError) {
-      console.error('Error linking minor waiver acceptances:', minorLinkError);
+    if (!res.ok) {
+      console.error(
+        `[stripe-webhook] send-waiver-email returned HTTP ${res.status}: ${await res.text()}`,
+      );
     }
+  } catch (error) {
+    console.error(`[stripe-webhook] send-waiver-email threw: ${String(error)}`);
   }
 }
 
