@@ -1,0 +1,15 @@
+# Binary assets must never receive end-of-line conversion.
+#
+# The waiver PDFs are ReportLab output with no NUL bytes in the first 8KB, so
+# git's content heuristic classifies them as text. With core.autocrlf=true that
+# turns every LF into CRLF on checkout and the file no longer opens.
+*.pdf binary
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary

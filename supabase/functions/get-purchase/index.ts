@@ -43,10 +43,41 @@ Deno.serve(async (req) => {
       throw error;
     }
 
-    return new Response(JSON.stringify({ purchase: data }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // The waiver link is stored on the buyer's attendee row, not the purchase,
+    // so the success page can offer "Sign my waiver now" without a detour to
+    // the inbox. It is null until send-waiver-email has run, which is a second
+    // or two behind the redirect -- the page falls back to the plain link.
+    let smartwaiverUrl: string | null = null;
+    let waiverStatus: string | null = null;
+
+    if (data) {
+      const { data: attendee, error: attendeeError } = await supabase
+        .from("attendees")
+        .select("smartwaiver_url, waiver_status")
+        .eq("purchase_id", (data as { id: string }).id)
+        .eq("is_buyer", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (attendeeError) {
+        console.error("[get-purchase] attendee lookup failed:", attendeeError.message);
+      } else if (attendee) {
+        const row = attendee as { smartwaiver_url: string | null; waiver_status: string | null };
+        smartwaiverUrl = row.smartwaiver_url;
+        waiverStatus = row.waiver_status;
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        purchase: data ? { ...data, smartwaiver_url: smartwaiverUrl, waiver_status: waiverStatus } : null,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[get-purchase] ERROR:", message);

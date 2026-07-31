@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import WaiverDialog from "./WaiverDialog";
+import TicketPicker from "./TicketPicker";
 
 const EARLY_BIRD_CUTOFF = new Date("2026-05-06T03:59:59Z");
 
@@ -97,7 +97,7 @@ const ticketTiers = [
 type TicketTier = (typeof ticketTiers)[number];
 
 const TicketsSection = () => {
-  const [waiverOpen, setWaiverOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<{
     type: string;
     label: string;
@@ -108,7 +108,7 @@ const TicketsSection = () => {
 
   const handleTicketClick = (ticketType: string, ticketLabel: string) => {
     setSelectedTicket({ type: ticketType, label: ticketLabel });
-    setWaiverOpen(true);
+    setPickerOpen(true);
   };
 
   // Filter out expired Early Bird
@@ -238,9 +238,9 @@ const TicketsSection = () => {
       </div>
 
       {selectedTicket && (
-        <WaiverDialog
-          open={waiverOpen}
-          onOpenChange={setWaiverOpen}
+        <TicketPicker
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
           ticketType={selectedTicket.type}
           ticketLabel={selectedTicket.label}
         />

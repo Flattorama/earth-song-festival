@@ -6,15 +6,6 @@ verify_jwt = false
 [functions.get-purchase]
 verify_jwt = false
 
-[functions.submit-attendees]
-verify_jwt = false
-
-[functions.get-attendee-by-token]
-verify_jwt = false
-
-[functions.sign-waiver]
-verify_jwt = false
-
 [functions.get-admin-dashboard-data]
 verify_jwt = false
 
@@ -22,4 +13,19 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-waiver-email]
+verify_jwt = false
+
+[functions.smartwaiver-webhook]
+verify_jwt = false
+
+[functions.waiver-reconcile]
+verify_jwt = false
+
+[functions.checkin-roster]
+verify_jwt = false
+
+[functions.checkin-mark]
 verify_jwt = false
