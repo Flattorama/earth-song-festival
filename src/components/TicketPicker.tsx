@@ -43,6 +43,7 @@ const TicketPicker = ({
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<ReferralStatus>("idle");
   const [referralFacilitator, setReferralFacilitator] = useState("");
+  const [bringingMinors, setBringingMinors] = useState(false);
   const [counts, setCounts] = useState<Record<YouthAgeBand, number>>({
     "13-18": 0,
     "8-12": 0,
@@ -57,7 +58,10 @@ const TicketPicker = ({
   const pass = youthPricing[passType];
 
   const youthTotal = youthSubtotal({ [passType]: counts } as YouthCounts);
-  const youthCount = YOUTH_AGE_BANDS.reduce((sum, band) => sum + counts[band], 0);
+  const youthCount = YOUTH_AGE_BANDS.reduce(
+    (sum, band) => sum + counts[band],
+    0,
+  );
   const canSubmit = name.trim() !== "" && email.trim() !== "" && !loading;
 
   // Steps from the previous count rather than the rendered one: two quick taps
@@ -68,6 +72,16 @@ const TicketPicker = ({
       ...prev,
       [band]: Math.min(Math.max(prev[band] + delta, 0), MAX_YOUTH_PER_BAND),
     }));
+  };
+
+  /**
+   * Answering "No" clears any counts already entered. Without this, someone who
+   * added two children and then changed their mind would still be charged for
+   * them, because the collapsed section keeps its state.
+   */
+  const setBringingMinorsAnswer = (answer: boolean) => {
+    setBringingMinors(answer);
+    if (!answer) setCounts({ "13-18": 0, "8-12": 0, "2-7": 0, "under-2": 0 });
   };
 
   const validateReferralCode = useCallback(async (code: string) => {
@@ -100,6 +114,7 @@ const TicketPicker = ({
     setReferralCode("");
     setReferralStatus("idle");
     setReferralFacilitator("");
+    setBringingMinors(false);
     setCounts({ "13-18": 0, "8-12": 0, "2-7": 0, "under-2": 0 });
   };
 
@@ -114,30 +129,39 @@ const TicketPicker = ({
 
     try {
       // Bands left at zero are omitted entirely: create-checkout rejects a
-      // count of 0 rather than ignoring it.
+      // count of 0 rather than ignoring it. Answering "No" to the minors
+      // question is also honoured here, so a collapsed section can never
+      // contribute a charge.
       const bands: Partial<Record<YouthAgeBand, number>> = {};
-      for (const band of YOUTH_AGE_BANDS) {
-        if (counts[band] > 0) bands[band] = counts[band];
+      if (bringingMinors) {
+        for (const band of YOUTH_AGE_BANDS) {
+          if (counts[band] > 0) bands[band] = counts[band];
+        }
       }
       const youthCounts: YouthCounts =
         Object.keys(bands).length > 0 ? { [passType]: bands } : {};
 
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
-          ticketType,
-          customerName: name.trim(),
-          customerEmail: email.trim(),
-          referralCode:
-            referralStatus === "valid" ? referralCode.trim().toUpperCase() : undefined,
-          youthCounts,
+      const { data, error } = await supabase.functions.invoke(
+        "create-checkout",
+        {
+          body: {
+            ticketType,
+            customerName: name.trim(),
+            customerEmail: email.trim(),
+            referralCode:
+              referralStatus === "valid"
+                ? referralCode.trim().toUpperCase()
+                : undefined,
+            youthCounts,
+          },
         },
-      });
+      );
 
       if (error) {
         throw new Error(
           data && typeof data === "object" && "error" in data
             ? String(data.error)
-            : error.message
+            : error.message,
         );
       }
 
@@ -167,9 +191,8 @@ const TicketPicker = ({
               {ticketLabel}
             </DialogTitle>
             <DialogDescription className="text-xs leading-snug sm:text-sm">
-              Enter your details and add any youth tickets. After payment we'll
-              email you a waiver to sign — one per adult, and you can add your
-              kids on the same form.
+              After payment we'll email you a waiver to sign — one per adult, and
+              you can add your kids on the same form.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -236,71 +259,113 @@ const TicketPicker = ({
           </div>
 
           <div className="rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
-            <h4 className="font-serif text-sm font-semibold text-primary sm:text-base">
-              Youth Tickets
-            </h4>
-            <p className="mt-1 text-xs text-foreground/70 sm:text-sm">
-              {pass.label} pricing. Youth must attend with an accompanying adult.
-              You'll add each child's name on the waiver after payment.
-            </p>
-
-            <div className="mt-4 space-y-2">
-              {YOUTH_AGE_BANDS.map((band) => {
-                const tier = pass.tiers[band];
-                const value = counts[band];
-                return (
-                  <div
-                    key={band}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {tier.label}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {tier.amount === 0 ? "Free" : `CA$${tier.amount}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label={`Remove one ${tier.label} ticket`}
-                        disabled={value === 0}
-                        onClick={() => adjustBand(band, -1)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span
-                        className="w-6 text-center text-sm font-semibold tabular-nums"
-                        data-testid={`youth-count-${band}`}
-                      >
-                        {value}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label={`Add one ${tier.label} ticket`}
-                        disabled={value >= MAX_YOUTH_PER_BAND}
-                        onClick={() => adjustBand(band, +1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h4 className="font-serif text-sm font-semibold text-primary sm:text-base">
+                  Are any children coming with you?
+                </h4>
+                <p className="mt-1 text-xs text-foreground/70 sm:text-sm">
+                  Anyone under 18 needs their own ticket.
+                </p>
+              </div>
+              <div
+                className="flex flex-shrink-0 gap-2"
+                role="group"
+                aria-label="Are any children coming with you?"
+              >
+                <Button
+                  type="button"
+                  variant={bringingMinors ? "outline" : "default"}
+                  size="sm"
+                  aria-pressed={!bringingMinors}
+                  data-testid="minors-no"
+                  onClick={() => setBringingMinorsAnswer(false)}
+                >
+                  No
+                </Button>
+                <Button
+                  type="button"
+                  variant={bringingMinors ? "default" : "outline"}
+                  size="sm"
+                  aria-pressed={bringingMinors}
+                  data-testid="minors-yes"
+                  onClick={() => setBringingMinorsAnswer(true)}
+                >
+                  Yes
+                </Button>
+              </div>
             </div>
 
-            {youthCount > 0 && (
-              <div className="mt-3 rounded-lg bg-primary/5 p-3 text-sm text-foreground/80">
-                {youthCount} youth ticket{youthCount > 1 ? "s" : ""} — subtotal{" "}
-                <span className="font-semibold text-primary">CA${youthTotal}</span>
-              </div>
+            {bringingMinors && (
+              <>
+                <p className="mt-4 text-xs text-foreground/70 sm:text-sm">
+                  {pass.label} pricing. Children must attend with an
+                  accompanying adult, and you'll add each name on the waiver
+                  after payment.
+                </p>
+
+                <div className="mt-3 space-y-2">
+                  {YOUTH_AGE_BANDS.map((band) => {
+                    const tier = pass.tiers[band];
+                    const value = counts[band];
+                    return (
+                      <div
+                        key={band}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-white px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">
+                            {tier.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {tier.amount === 0 ? "Free" : `CA$${tier.amount}`}
+                          </p>
+                        </div>
+                        <div className="flex flex-shrink-0 items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            aria-label={`Remove one ${tier.label} ticket`}
+                            disabled={value === 0}
+                            onClick={() => adjustBand(band, -1)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span
+                            className="w-6 text-center text-sm font-semibold tabular-nums"
+                            data-testid={`youth-count-${band}`}
+                          >
+                            {value}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            aria-label={`Add one ${tier.label} ticket`}
+                            disabled={value >= MAX_YOUTH_PER_BAND}
+                            onClick={() => adjustBand(band, +1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {youthCount > 0 && (
+                  <div className="mt-3 rounded-lg bg-primary/5 p-3 text-sm text-foreground/80">
+                    {youthCount} youth ticket{youthCount > 1 ? "s" : ""} —
+                    subtotal{" "}
+                    <span className="font-semibold text-primary">
+                      CA${youthTotal}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
