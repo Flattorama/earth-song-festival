@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.checkin-roster]
+verify_jwt = false
+
+[functions.checkin-mark]
+verify_jwt = false
