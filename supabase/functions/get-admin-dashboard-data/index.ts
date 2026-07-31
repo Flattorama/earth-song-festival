@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   type AttendeeWaiverState,
+  buildRoster,
   decideStatusChange,
   isWaiverStatus,
 } from "./helpers.ts";
@@ -149,7 +150,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const [attendeesRes, purchasesRes, minorWaiversRes, unmatchedRes] = await Promise.all([
+    const [
+      attendeesRes,
+      purchasesRes,
+      minorWaiversRes,
+      unmatchedRes,
+      legacyWaiversRes,
+      paidOrdersRes,
+    ] = await Promise.all([
       supabase
         .from("attendees")
         .select(
@@ -175,6 +183,20 @@ Deno.serve(async (req) => {
         .eq("match_method", "unmatched")
         .order("created_at", { ascending: false })
         .limit(100),
+      // Everyone who signed the in-checkout waiver before the Smartwaiver
+      // migration. Without this the whole pre-August roster is invisible.
+      supabase
+        .from("waiver_acceptances")
+        .select(
+          "id, attendee_name, attendee_email, ticket_type, stripe_session_id, accepted_at, created_at"
+        )
+        .order("created_at", { ascending: false }),
+      // Payment evidence for legacy rows, which have no purchases row to point
+      // at. stripe_orders has no email column, so the join is by session id.
+      supabase
+        .from("stripe_orders")
+        .select("checkout_session_id, payment_status, status, deleted_at")
+        .is("deleted_at", null),
     ]);
 
     if (attendeesRes.error) {
@@ -191,13 +213,52 @@ Deno.serve(async (req) => {
     if (unmatchedRes.error) {
       console.error("[get-admin-dashboard-data] unmatched events:", unmatchedRes.error.message);
     }
+    // The legacy tables are the gate roster for everyone who bought before the
+    // migration, so a failure here is loud in the logs -- but it degrades to the
+    // attendees-only view rather than returning nothing at all.
+    if (legacyWaiversRes.error) {
+      console.error("[get-admin-dashboard-data] legacy waivers:", legacyWaiversRes.error.message);
+    }
+    if (paidOrdersRes.error) {
+      console.error("[get-admin-dashboard-data] stripe orders:", paidOrdersRes.error.message);
+    }
+
+    const attendees = attendeesRes.data || [];
+    const purchases = purchasesRes.data || [];
+    const minorWaivers = minorWaiversRes.data || [];
+    const legacyWaivers = legacyWaiversRes.error ? [] : legacyWaiversRes.data || [];
+    const paidOrders = paidOrdersRes.error ? [] : paidOrdersRes.data || [];
+
+    const paidSessionIds = paidOrders
+      .filter((order) => order.payment_status === "paid" || order.status === "completed")
+      .map((order) => order.checkout_session_id)
+      .filter((id): id is string => typeof id === "string");
+
+    const roster = buildRoster({
+      attendees,
+      purchases,
+      legacyWaivers,
+      legacyMinorWaivers: minorWaivers,
+      paidSessionIds,
+    });
 
     return new Response(
       JSON.stringify({
-        attendees: attendeesRes.data || [],
-        purchases: purchasesRes.data || [],
-        minorWaivers: minorWaiversRes.data || [],
+        attendees,
+        purchases,
+        minorWaivers,
         unmatchedWaivers: unmatchedRes.error ? [] : unmatchedRes.data || [],
+        legacyWaivers,
+        roster,
+        // Surfaced in the UI so an empty table is legible as "nothing in this
+        // source" rather than looking like a broken dashboard.
+        sources: {
+          attendees: attendees.length,
+          purchases: purchases.length,
+          legacyWaivers: legacyWaivers.length,
+          legacyMinorWaivers: minorWaivers.length,
+          paidStripeOrders: paidSessionIds.length,
+        },
       }),
       {
         status: 200,
