@@ -77,6 +77,7 @@ jobs:
           npx supabase@latest functions deploy google-sheets-sync --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy stripe-webhook --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy send-waiver-email --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
+          npx supabase@latest functions deploy smartwaiver-webhook --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy checkin-roster --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy checkin-mark --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy stripe-checkout --project-ref bdkaqgvzjkixwakzploq
