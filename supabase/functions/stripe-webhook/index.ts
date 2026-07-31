@@ -4,6 +4,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
 import { parseAdultMetadata, placeholderAdultEmail } from './adults.ts';
 import { isSkippedPaymentSession, shouldRecordPayment } from './session.ts';
+import { orderPaymentIntentId } from './order.ts';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
@@ -107,7 +108,10 @@ async function handleEvent(event: Stripe.Event) {
 
         const { error: orderError } = await supabase.from('stripe_orders').insert({
           checkout_session_id,
-          payment_intent_id: payment_intent,
+          payment_intent_id: orderPaymentIntentId(
+            payment_intent as string | null,
+            checkout_session_id,
+          ),
           customer_id: customerId,
           amount_subtotal,
           amount_total,
@@ -117,9 +121,16 @@ async function handleEvent(event: Stripe.Event) {
         });
 
         if (orderError) {
-          console.error('Error inserting order:', orderError);
-          return;
+          // Deliberately not fatal. stripe_orders is inherited bookkeeping that
+          // only feeds a Google Sheet; the purchase, the attendee rows and the
+          // waiver emails matter far more. This used to `return`, so a failed
+          // insert here silently cost someone their ticket.
+          console.error(
+            `[stripe-webhook] stripe_orders insert failed for ${checkout_session_id} (continuing anyway):`,
+            orderError,
+          );
         }
+
         await upsertPurchaseFromSession(session);
         console.info(`Successfully processed one-time payment for session: ${checkout_session_id}`);
       } catch (error) {
