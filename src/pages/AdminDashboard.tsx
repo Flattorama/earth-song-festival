@@ -88,19 +88,59 @@ interface MinorWaiverRow {
   created_at: string;
 }
 
+/**
+ * One person, folded together from every source in Supabase: the new attendees
+ * table, the legacy in-checkout waivers, and purchases whose attendee rows were
+ * never created. Built server-side by buildRoster.
+ */
+interface RosterRow {
+  key: string;
+  name: string;
+  email: string;
+  ticketType: string | null;
+  origin: "attendee" | "legacy" | "purchase";
+  /** Null for legacy and purchase-only rows, which have no attendees row to act on. */
+  attendeeId: string | null;
+  purchaseId: string | null;
+  isMinor: boolean;
+  waiverStatus: "signed" | "pending";
+  waiverSource: "smartwaiver" | "paper" | "legacy" | "legacy-minor" | "none";
+  signedAt: string | null;
+  hasPaymentRecord: boolean;
+  duplicateWaivers: number;
+}
+
+interface SourceCounts {
+  attendees: number;
+  purchases: number;
+  legacyWaivers: number;
+  legacyMinorWaivers: number;
+  paidStripeOrders: number;
+}
+
 interface AdminDashboardResponse {
   attendees?: AttendeeRow[];
   purchases?: PurchaseRow[];
   minorWaivers?: MinorWaiverRow[];
   unmatchedWaivers?: UnmatchedWaiverRow[];
+  roster?: RosterRow[];
+  sources?: SourceCounts;
   resent?: boolean;
   updated?: boolean;
   error?: string;
 }
 
+const WAIVER_SOURCE_LABELS: Record<RosterRow["waiverSource"], string> = {
+  smartwaiver: "Signed",
+  paper: "Signed · paper",
+  legacy: "Signed · pre-Aug",
+  "legacy-minor": "Signed · guardian",
+  none: "Pending",
+};
+
 /** The attendee a confirm dialog is currently open for, and what it will do. */
 interface StatusChangeIntent {
-  attendee: AttendeeRow;
+  attendee: { id: string; name: string; email: string };
   status: "signed" | "pending";
 }
 
@@ -113,8 +153,8 @@ const TICKET_LABELS: Record<string, string> = {
 };
 
 const AdminDashboard = () => {
-  const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
-  const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [roster, setRoster] = useState<RosterRow[]>([]);
+  const [sources, setSources] = useState<SourceCounts | null>(null);
   const [minorWaivers, setMinorWaivers] = useState<MinorWaiverRow[]>([]);
   const [unmatchedWaivers, setUnmatchedWaivers] = useState<UnmatchedWaiverRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,8 +189,8 @@ const AdminDashboard = () => {
 
     if (error || data?.error) {
       console.error("Failed to load admin dashboard:", data?.error || error);
-      setAttendees([]);
-      setPurchases([]);
+      setRoster([]);
+      setSources(null);
       setMinorWaivers([]);
       setUnmatchedWaivers([]);
       if (error instanceof FunctionsHttpError && error.context.status === 403) {
@@ -161,8 +201,8 @@ const AdminDashboard = () => {
         setAuthError("Failed to load dashboard. Please try again.");
       }
     } else {
-      setAttendees(data?.attendees || []);
-      setPurchases(data?.purchases || []);
+      setRoster(data?.roster || []);
+      setSources(data?.sources || null);
       setMinorWaivers(data?.minorWaivers || []);
       setUnmatchedWaivers(data?.unmatchedWaivers || []);
     }
@@ -174,7 +214,7 @@ const AdminDashboard = () => {
    * holds INTERNAL_FUNCTION_TOKEN server-side -- the browser only ever carries
    * the admin token.
    */
-  const handleResend = async (attendee: AttendeeRow) => {
+  const handleResend = async (attendee: { id: string; email: string }) => {
     setResendingId(attendee.id);
     try {
       const { data, error } = await supabase.functions.invoke<AdminDashboardResponse>(
@@ -238,9 +278,9 @@ const AdminDashboard = () => {
   };
 
   const copyPendingEmails = async () => {
-    const emails = attendees
-      .filter((a) => a.waiver_status === "pending" && !a.is_minor && a.email)
-      .map((a) => a.email);
+    const emails = roster
+      .filter((r) => r.waiverStatus === "pending" && !r.isMinor && r.email)
+      .map((r) => r.email);
     if (emails.length === 0) {
       toast.info("No pending emails to copy.");
       return;
@@ -264,25 +304,23 @@ const AdminDashboard = () => {
     setAdminToken(trimmed);
   };
 
-  const purchaseMap = new Map(purchases.map((p) => [p.id, p]));
-
-  const filtered = attendees.filter((a) => {
-    if (filter === "signed" && a.waiver_status !== "signed") return false;
-    if (filter === "pending" && a.waiver_status !== "pending") return false;
+  const filtered = roster.filter((r) => {
+    if (filter === "signed" && r.waiverStatus !== "signed") return false;
+    if (filter === "pending" && r.waiverStatus !== "pending") return false;
     if (search.trim()) {
       const q = search.toLowerCase();
-      return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q);
+      return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
     }
     return true;
   });
 
   // Minors are covered by a guardian's signature, so the numbers that matter at
   // the gate are adults only.
-  const adults = attendees.filter((a) => !a.is_minor);
+  const adults = roster.filter((r) => !r.isMinor);
   const totalAttendees = adults.length;
-  const signedCount = adults.filter((a) => a.waiver_status === "signed").length;
-  const pendingCount = adults.filter((a) => a.waiver_status === "pending").length;
-  const minorCount = minorWaivers.length;
+  const signedCount = adults.filter((r) => r.waiverStatus === "signed").length;
+  const pendingCount = adults.filter((r) => r.waiverStatus === "pending").length;
+  const unpaidCount = adults.filter((r) => !r.hasPaymentRecord).length;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "--";
@@ -360,12 +398,12 @@ const AdminDashboard = () => {
               </div>
               <div className="bg-white rounded-xl border border-border p-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-secondary/30 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                    <TriangleAlert className="w-5 h-5 text-destructive" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{minorCount}</p>
-                    <p className="text-sm text-muted-foreground">Minor Waivers</p>
+                    <p className="text-2xl font-bold text-foreground">{unpaidCount}</p>
+                    <p className="text-sm text-muted-foreground">No payment record</p>
                   </div>
                 </div>
               </div>
@@ -427,11 +465,19 @@ const AdminDashboard = () => {
               </Button>
             </div>
 
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-2">
               Counts are adults only — minors are covered by their guardian's
-              signature. Sorted oldest first, so the top of the list is the
-              longest outstanding.
+              signature. Pending is listed first, so the top of the list is who
+              still needs chasing.
             </p>
+            {sources && (
+              <p className="text-xs text-muted-foreground mb-6">
+                Sources in Supabase: {sources.attendees} attendees ·{" "}
+                {sources.purchases} purchases · {sources.legacyWaivers} pre-Aug
+                waivers · {sources.legacyMinorWaivers} minor waivers ·{" "}
+                {sources.paidStripeOrders} paid Stripe orders
+              </p>
+            )}
 
             {loading ? (
               <div className="flex justify-center py-16">
@@ -439,8 +485,8 @@ const AdminDashboard = () => {
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
-                {attendees.length === 0
-                  ? "No attendees registered yet."
+                {roster.length === 0
+                  ? "No attendees found in any source."
                   : "No results match your filter."}
               </div>
             ) : (
@@ -452,55 +498,60 @@ const AdminDashboard = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Ticket Type</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Referral Code</TableHead>
                         <TableHead>Waiver Status</TableHead>
-                        <TableHead>Email Sent</TableHead>
-                        <TableHead>Reminders</TableHead>
                         <TableHead>Signed At</TableHead>
+                        <TableHead>Flags</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtered.map((a) => {
-                        const purchase = purchaseMap.get(a.purchase_id);
+                      {filtered.map((r) => {
+                        const busy =
+                          resendingId === r.attendeeId || statusChangingId === r.attendeeId;
+                        const actor = r.attendeeId
+                          ? { id: r.attendeeId, name: r.name, email: r.email }
+                          : null;
                         return (
-                          <TableRow key={a.id}>
-                            <TableCell className="font-medium">{a.name}</TableCell>
-                            <TableCell className="text-muted-foreground">{a.email}</TableCell>
+                          <TableRow key={r.key}>
+                            <TableCell className="font-medium">
+                              {r.name || "(no name)"}
+                              {r.isMinor && (
+                                <span className="ml-2 text-xs text-muted-foreground">minor</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {r.email || "--"}
+                            </TableCell>
                             <TableCell>
-                              {purchase
-                                ? TICKET_LABELS[purchase.ticket_type] || purchase.ticket_type
+                              {r.ticketType
+                                ? TICKET_LABELS[r.ticketType] || r.ticketType
                                 : "--"}
                             </TableCell>
                             <TableCell>
-                              {a.is_buyer ? (
-                                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                                  Buyer
-                                </span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">Attendee</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {purchase?.referral_code || "--"}
-                            </TableCell>
-                            <TableCell>
-                              {a.waiver_status === "signed" ? (
-                                a.waiver_signed_method === "paper" ? (
-                                  <span
-                                    className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full"
-                                    title="Recorded by staff — there is a paper waiver to file"
-                                  >
-                                    <FileText className="w-3 h-3" />
-                                    Signed · paper
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                              {r.waiverStatus === "signed" ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                                    r.waiverSource === "smartwaiver"
+                                      ? "text-accent bg-accent/10"
+                                      : "text-primary bg-primary/10"
+                                  }`}
+                                  title={
+                                    r.waiverSource === "paper"
+                                      ? "Recorded by staff — there is a paper waiver to file"
+                                      : r.waiverSource === "legacy"
+                                        ? "Signed the in-checkout waiver before the Smartwaiver migration"
+                                        : r.waiverSource === "legacy-minor"
+                                          ? "Covered by a guardian's waiver"
+                                          : "Signed on Smartwaiver"
+                                  }
+                                >
+                                  {r.waiverSource === "smartwaiver" ? (
                                     <ShieldCheck className="w-3 h-3" />
-                                    Signed
-                                  </span>
-                                )
+                                  ) : (
+                                    <FileText className="w-3 h-3" />
+                                  )}
+                                  {WAIVER_SOURCE_LABELS[r.waiverSource]}
+                                </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">
                                   <Clock className="w-3 h-3" />
@@ -509,80 +560,96 @@ const AdminDashboard = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm">
-                              {a.waiver_email_sent_at ? (
-                                formatDate(a.waiver_email_sent_at)
-                              ) : (
-                                <span className="text-destructive">never</span>
-                              )}
+                              {formatDate(r.signedAt)}
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {a.waiver_reminder_count ?? 0}
-                              {a.waiver_last_reminder_at
-                                ? ` · ${formatDate(a.waiver_last_reminder_at)}`
-                                : ""}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {formatDate(a.waiver_signed_at)}
+                            <TableCell className="text-sm">
+                              <div className="flex flex-col gap-1">
+                                {!r.hasPaymentRecord && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full w-fit"
+                                    title="No purchase or paid Stripe order in Supabase matches this person — could be a comp, an e-transfer, or a refund"
+                                  >
+                                    <TriangleAlert className="w-3 h-3" />
+                                    No payment record
+                                  </span>
+                                )}
+                                {r.duplicateWaivers > 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {r.duplicateWaivers + 1} waivers on file
+                                  </span>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                {a.waiver_status !== "signed" && !a.is_minor && (
+                                {/* Actions need an attendees row. Legacy and orphaned-purchase
+                                    rows are read-only until someone is registered properly. */}
+                                {!actor ? (
+                                  <span
+                                    className="text-xs text-muted-foreground"
+                                    title="This person exists only in the pre-August waiver or purchase records, so there is no attendee row to act on"
+                                  >
+                                    read-only
+                                  </span>
+                                ) : (
                                   <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={resendingId === a.id}
-                                      onClick={() => handleResend(a)}
-                                    >
-                                      {resendingId === a.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <>
-                                          <Send className="w-3.5 h-3.5 mr-1.5" />
-                                          Resend
-                                        </>
-                                      )}
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={statusChangingId === a.id}
-                                      onClick={() =>
-                                        setPendingIntent({ attendee: a, status: "signed" })
-                                      }
-                                    >
-                                      {statusChangingId === a.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <>
-                                          <FileText className="w-3.5 h-3.5 mr-1.5" />
-                                          Mark signed (paper)
-                                        </>
-                                      )}
-                                    </Button>
+                                    {r.waiverStatus !== "signed" && !r.isMinor && (
+                                      <>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          disabled={busy}
+                                          onClick={() => handleResend(actor)}
+                                        >
+                                          {resendingId === r.attendeeId ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            <>
+                                              <Send className="w-3.5 h-3.5 mr-1.5" />
+                                              Resend
+                                            </>
+                                          )}
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          disabled={busy}
+                                          onClick={() =>
+                                            setPendingIntent({ attendee: actor, status: "signed" })
+                                          }
+                                        >
+                                          {statusChangingId === r.attendeeId ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            <>
+                                              <FileText className="w-3.5 h-3.5 mr-1.5" />
+                                              Mark signed (paper)
+                                            </>
+                                          )}
+                                        </Button>
+                                      </>
+                                    )}
+                                    {r.waiverSource === "paper" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        disabled={busy}
+                                        onClick={() =>
+                                          setPendingIntent({ attendee: actor, status: "pending" })
+                                        }
+                                      >
+                                        {statusChangingId === r.attendeeId ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                                            Undo
+                                          </>
+                                        )}
+                                      </Button>
+                                    )}
                                   </>
                                 )}
-                                {a.waiver_status === "signed" &&
-                                  a.waiver_signed_method === "paper" &&
-                                  !a.smartwaiver_id && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      disabled={statusChangingId === a.id}
-                                      onClick={() =>
-                                        setPendingIntent({ attendee: a, status: "pending" })
-                                      }
-                                    >
-                                      {statusChangingId === a.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <>
-                                          <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                                          Undo
-                                        </>
-                                      )}
-                                    </Button>
-                                  )}
                               </div>
                             </TableCell>
                           </TableRow>
