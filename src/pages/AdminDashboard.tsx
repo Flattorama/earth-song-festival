@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader as Loader2, RefreshCw, Shield, ShieldCheck, Clock } from "lucide-react";
+import {
+  Loader as Loader2,
+  RefreshCw,
+  Shield,
+  ShieldCheck,
+  Clock,
+  Copy,
+  Send,
+  TriangleAlert,
+} from "lucide-react";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AttendeeRow {
   id: string;
@@ -14,10 +24,27 @@ interface AttendeeRow {
   email: string;
   phone: string;
   is_buyer: boolean;
+  is_minor: boolean;
   waiver_status: string;
   waiver_signed_at: string | null;
+  waiver_email_sent_at: string | null;
+  waiver_reminder_count: number | null;
+  waiver_last_reminder_at: string | null;
+  smartwaiver_id: string | null;
+  smartwaiver_url: string | null;
+  checked_in_at: string | null;
   created_at: string;
   purchase_id: string;
+}
+
+interface UnmatchedWaiverRow {
+  id: string;
+  unique_id: string;
+  event: string;
+  match_method: string | null;
+  waiver_data: { waiver?: Record<string, unknown> } | Record<string, unknown> | null;
+  error: string | null;
+  created_at: string;
 }
 
 interface PurchaseRow {
@@ -58,6 +85,8 @@ interface AdminDashboardResponse {
   attendees?: AttendeeRow[];
   purchases?: PurchaseRow[];
   minorWaivers?: MinorWaiverRow[];
+  unmatchedWaivers?: UnmatchedWaiverRow[];
+  resent?: boolean;
   error?: string;
 }
 
@@ -73,8 +102,11 @@ const AdminDashboard = () => {
   const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [minorWaivers, setMinorWaivers] = useState<MinorWaiverRow[]>([]);
+  const [unmatchedWaivers, setUnmatchedWaivers] = useState<UnmatchedWaiverRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "signed" | "pending">("all");
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  // Pending is the call list, so it is what you want on opening the page.
+  const [filter, setFilter] = useState<"all" | "signed" | "pending">("pending");
   const [search, setSearch] = useState("");
   const [adminToken, setAdminToken] = useState(
     () => window.localStorage.getItem("earthsong_admin_token") || ""
@@ -104,6 +136,7 @@ const AdminDashboard = () => {
       setAttendees([]);
       setPurchases([]);
       setMinorWaivers([]);
+      setUnmatchedWaivers([]);
       if (error instanceof FunctionsHttpError && error.context.status === 403) {
         setAuthError("Unable to load admin dashboard. Check your admin token.");
         setAdminToken("");
@@ -115,9 +148,54 @@ const AdminDashboard = () => {
       setAttendees(data?.attendees || []);
       setPurchases(data?.purchases || []);
       setMinorWaivers(data?.minorWaivers || []);
+      setUnmatchedWaivers(data?.unmatchedWaivers || []);
     }
     setLoading(false);
   }, [adminToken]);
+
+  /**
+   * Resends a waiver email. Routed through get-admin-dashboard-data, which
+   * holds INTERNAL_FUNCTION_TOKEN server-side -- the browser only ever carries
+   * the admin token.
+   */
+  const handleResend = async (attendee: AttendeeRow) => {
+    setResendingId(attendee.id);
+    try {
+      const { data, error } = await supabase.functions.invoke<AdminDashboardResponse>(
+        "get-admin-dashboard-data",
+        {
+          headers: { "X-Admin-Token": adminToken },
+          body: { action: "resend-waiver", attendeeId: attendee.id },
+        }
+      );
+      if (error || data?.error) {
+        toast.error(`Could not resend to ${attendee.email}`);
+      } else {
+        toast.success(`Waiver email resent to ${attendee.email}`);
+        fetchData();
+      }
+    } catch {
+      toast.error(`Could not resend to ${attendee.email}`);
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const copyPendingEmails = async () => {
+    const emails = attendees
+      .filter((a) => a.waiver_status === "pending" && !a.is_minor && a.email)
+      .map((a) => a.email);
+    if (emails.length === 0) {
+      toast.info("No pending emails to copy.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(emails.join(", "));
+      toast.success(`Copied ${emails.length} pending email${emails.length > 1 ? "s" : ""}.`);
+    } catch {
+      toast.error("Clipboard unavailable. Check browser permissions.");
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -142,9 +220,12 @@ const AdminDashboard = () => {
     return true;
   });
 
-  const totalAttendees = attendees.length;
-  const signedCount = attendees.filter((a) => a.waiver_status === "signed").length;
-  const pendingCount = attendees.filter((a) => a.waiver_status === "pending").length;
+  // Minors are covered by a guardian's signature, so the numbers that matter at
+  // the gate are adults only.
+  const adults = attendees.filter((a) => !a.is_minor);
+  const totalAttendees = adults.length;
+  const signedCount = adults.filter((a) => a.waiver_status === "signed").length;
+  const pendingCount = adults.filter((a) => a.waiver_status === "pending").length;
   const minorCount = minorWaivers.length;
 
   const formatDate = (dateStr: string | null) => {
@@ -279,7 +360,22 @@ const AdminDashboard = () => {
                   </Button>
                 ))}
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyPendingEmails}
+                className="sm:ml-auto"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy all pending emails
+              </Button>
             </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              Counts are adults only — minors are covered by their guardian's
+              signature. Sorted oldest first, so the top of the list is the
+              longest outstanding.
+            </p>
 
             {loading ? (
               <div className="flex justify-center py-16">
@@ -303,7 +399,10 @@ const AdminDashboard = () => {
                         <TableHead>Role</TableHead>
                         <TableHead>Referral Code</TableHead>
                         <TableHead>Waiver Status</TableHead>
+                        <TableHead>Email Sent</TableHead>
+                        <TableHead>Reminders</TableHead>
                         <TableHead>Signed At</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -344,7 +443,94 @@ const AdminDashboard = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm">
+                              {a.waiver_email_sent_at ? (
+                                formatDate(a.waiver_email_sent_at)
+                              ) : (
+                                <span className="text-destructive">never</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {a.waiver_reminder_count ?? 0}
+                              {a.waiver_last_reminder_at
+                                ? ` · ${formatDate(a.waiver_last_reminder_at)}`
+                                : ""}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
                               {formatDate(a.waiver_signed_at)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {a.waiver_status !== "signed" && !a.is_minor && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={resendingId === a.id}
+                                  onClick={() => handleResend(a)}
+                                >
+                                  {resendingId === a.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Send className="w-3.5 h-3.5 mr-1.5" />
+                                      Resend
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
+            {unmatchedWaivers.length > 0 && (
+              <div className="mt-8 bg-white rounded-xl border border-destructive/30 overflow-hidden">
+                <div className="border-b border-border px-4 py-3 flex items-start gap-3">
+                  <TriangleAlert className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h2 className="font-serif text-xl font-semibold text-primary">
+                      Unmatched waivers ({unmatchedWaivers.length})
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Signed waivers we could not tie to a purchase — usually a
+                      typo'd email or someone signing from a forwarded link.
+                      These need a human to reconcile.
+                    </p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Signed</TableHead>
+                        <TableHead>Name on waiver</TableHead>
+                        <TableHead>Email on waiver</TableHead>
+                        <TableHead>Smartwaiver ID</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unmatchedWaivers.map((row) => {
+                        const payload = (row.waiver_data || {}) as Record<string, unknown>;
+                        const waiver = (payload.waiver || payload) as Record<string, unknown>;
+                        const first = typeof waiver.firstName === "string" ? waiver.firstName : "";
+                        const last = typeof waiver.lastName === "string" ? waiver.lastName : "";
+                        const waiverEmail = typeof waiver.email === "string" ? waiver.email : "";
+                        return (
+                          <TableRow key={row.id}>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {formatDate(row.created_at)}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {[first, last].filter(Boolean).join(" ") || "--"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {waiverEmail || "--"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs font-mono">
+                              {row.unique_id}
                             </TableCell>
                           </TableRow>
                         );
@@ -359,10 +545,12 @@ const AdminDashboard = () => {
               <div className="mt-8 bg-white rounded-xl border border-border overflow-hidden">
                 <div className="border-b border-border px-4 py-3">
                   <h2 className="font-serif text-xl font-semibold text-primary">
-                    Minor Waivers
+                    Legacy minor waivers (pre-Aug 2026)
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Youth attendees linked to accompanying adult purchases.
+                    Signed inside the old checkout dialog. This table stops
+                    receiving new rows, but these are real legal records for
+                    anyone who bought before the change — do not delete them.
                   </p>
                 </div>
                 <div className="overflow-x-auto">
