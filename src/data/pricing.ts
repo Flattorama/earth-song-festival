@@ -80,6 +80,17 @@ export const YOUTH_AGE_BANDS: YouthAgeBand[] = ["13-18", "8-12", "2-7", "under-2
 /** Highest count accepted per age band; create-checkout rejects anything above. */
 export const MAX_YOUTH_PER_BAND = 10;
 
+/**
+ * Adults per purchase. Every adult signs their own waiver, so the buyer supplies
+ * a name and email for each additional one at checkout. Larger groups contact us.
+ */
+export const MAX_ADULTS_PER_PURCHASE = 10;
+
+export interface AdditionalAdult {
+  name: string;
+  email: string;
+}
+
 /** Counts keyed the way create-checkout expects them: { weekend: { "13-18": 2 } } */
 export type YouthCounts = Partial<Record<YouthPassType, Partial<Record<YouthAgeBand, number>>>>;
 

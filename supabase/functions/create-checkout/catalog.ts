@@ -38,6 +38,18 @@ export const STRIPE_METADATA_VALUE_LIMIT = 500;
 // contact us rather than self-serve.
 export const MAX_YOUTH_PER_BAND = 10;
 
+/**
+ * Adults per purchase. Each additional adult travels as two Stripe metadata
+ * keys, and Stripe allows 50 keys per object -- at 10 adults we use 9 x 2 = 18
+ * on top of the ~10 base keys, so this cap also keeps us inside that budget.
+ */
+export const MAX_ADULTS_PER_PURCHASE = 10;
+
+export interface ValidatedAdult {
+  name: string;
+  email: string;
+}
+
 export const EARLY_BIRD_CUTOFF = "2026-05-06T03:59:59Z";
 
 export const TICKETS: Record<string, TicketDefinition> = {
@@ -113,6 +125,99 @@ export const DAY_PASS_YOUTH_REQUIREMENT: Record<string, string> = {
 export function isEarlyBirdExpired(now: Date): boolean {
   return now >= new Date(EARLY_BIRD_CUTOFF);
 }
+
+/** Deliberately permissive -- we are catching typos, not policing RFC 5322. */
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
+
+/**
+ * Validates the adult party.
+ *
+ * Every adult must sign their own waiver, so each additional adult needs a real
+ * name and email -- that is who receives the link. Returns the additional adults
+ * only; the buyer is handled separately from the top-level name/email.
+ *
+ * The uniqueness rule is load-bearing, not tidiness: `attendees` carries
+ * UNIQUE (purchase_id, email), so two identical addresses would collapse into
+ * one row and we would sell three tickets while tracking two adults.
+ */
+export function validateAdults(
+  rawQuantity: unknown,
+  rawAdults: unknown,
+  buyerEmail: string,
+): ValidatedAdult[] {
+  const quantity = rawQuantity === undefined || rawQuantity === null ? 1 : rawQuantity;
+
+  if (typeof quantity !== "number" || !Number.isInteger(quantity)) {
+    throw new Error("Adult ticket quantity must be a whole number.");
+  }
+  if (quantity < 1 || quantity > MAX_ADULTS_PER_PURCHASE) {
+    throw new Error(
+      `Adult ticket quantity must be between 1 and ${MAX_ADULTS_PER_PURCHASE}. For larger groups, please contact us.`,
+    );
+  }
+
+  const expected = quantity - 1;
+  const list = rawAdults === undefined || rawAdults === null ? [] : rawAdults;
+
+  if (!Array.isArray(list)) {
+    throw new Error("Additional adults must be submitted as a list.");
+  }
+  if (list.length !== expected) {
+    throw new Error(
+      `Expected details for ${expected} additional adult${expected === 1 ? "" : "s"}, received ${list.length}.`,
+    );
+  }
+
+  const seen = new Set<string>([buyerEmail.trim().toLowerCase()]);
+  const adults: ValidatedAdult[] = [];
+
+  list.forEach((raw, index) => {
+    const position = index + 2; // adult 1 is the buyer
+    const entry = (raw ?? {}) as { name?: unknown; email?: unknown };
+    const name = typeof entry.name === "string" ? entry.name.trim() : "";
+    const email = typeof entry.email === "string" ? entry.email.trim() : "";
+
+    if (!name) {
+      throw new Error(`Please enter a name for adult ${position}.`);
+    }
+    if (!email || !EMAIL_RE.test(email)) {
+      throw new Error(`Please enter a valid email for adult ${position}.`);
+    }
+
+    const key = email.toLowerCase();
+    if (seen.has(key)) {
+      throw new Error(
+        `Each adult needs their own email address. ${email} is used more than once.`,
+      );
+    }
+    seen.add(key);
+
+    adults.push({ name, email });
+  });
+
+  return adults;
+}
+
+/**
+ * Additional adults ride along as one key pair each rather than a single packed
+ * value. Stripe caps a metadata value at 500 characters, and truncating a packed
+ * string would silently drop an adult -- losing a person is worse than any
+ * verbosity here.
+ */
+export function buildAdultMetadata(adults: ValidatedAdult[]): Record<string, string> {
+  const meta: Record<string, string> = {};
+  adults.forEach((adult, index) => {
+    const position = index + 2;
+    meta[`adult_${position}_name`] = adult.name.slice(0, STRIPE_METADATA_VALUE_LIMIT);
+    meta[`adult_${position}_email`] = adult.email.slice(0, STRIPE_METADATA_VALUE_LIMIT);
+  });
+  return meta;
+}
+
+// The reader for these keys lives in stripe-webhook/adults.ts. Edge functions in
+// this repo are self-contained -- none import across function directories -- so
+// the two sides are kept honest by a round-trip test
+// (src/test/adult-metadata-contract.test.ts) rather than a shared module.
 
 /**
  * Turns `{ weekend: { "13-18": 2 } }` into priced line data.

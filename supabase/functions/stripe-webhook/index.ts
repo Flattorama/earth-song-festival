@@ -2,6 +2,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
+import { parseAdultMetadata, placeholderAdultEmail } from './adults.ts';
+
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 const stripe = new Stripe(stripeSecret, {
@@ -199,15 +201,67 @@ async function upsertPurchaseFromSession(session: Stripe.Checkout.Session) {
     console.error('Error upserting attendee:', attendeeError);
   }
 
-  await sendWaiverEmail(purchase.id);
+  // One attendee row per additional adult. Each signs their own waiver, so each
+  // needs its own row to be marked signed against.
+  if (adultTicketCount > 1) {
+    const staged = parseAdultMetadata(metadata, adultTicketCount);
+
+    // Paid for N adults but the details did not survive? Still create rows, with
+    // unroutable placeholder addresses, so the count is never wrong and the
+    // registration desk's adult-shortfall warning stays accurate.
+    const rows = [];
+    for (let position = 2; position <= adultTicketCount; position++) {
+      const provided = staged[position - 2];
+      rows.push({
+        purchase_id: purchase.id,
+        name: provided?.name || `Adult ${position}`,
+        email: provided?.email || placeholderAdultEmail(purchase.id, position),
+        is_buyer: false,
+        is_minor: false,
+        waiver_status: 'pending',
+      });
+    }
+
+    if (staged.length !== adultTicketCount - 1) {
+      console.error(
+        `[stripe-webhook] purchase ${purchase.id} expected ${adultTicketCount - 1} additional adults in metadata but found ${staged.length}; placeholders created`,
+      );
+    }
+
+    const { error: adultsError } = await supabase
+      .from('attendees')
+      .upsert(rows, { onConflict: 'purchase_id,email' });
+
+    if (adultsError) {
+      console.error('Error upserting additional adults:', adultsError);
+    }
+  }
+
+  // Email every pending adult on this purchase individually. Addressing them by
+  // attendee id rather than purchase id is what stops all of them resolving to
+  // the buyer.
+  const { data: pendingAdults, error: listError } = await supabase
+    .from('attendees')
+    .select('id')
+    .eq('purchase_id', purchase.id)
+    .eq('is_minor', false);
+
+  if (listError) {
+    console.error('Error listing adults for waiver emails:', listError);
+    return;
+  }
+
+  for (const adult of (pendingAdults || []) as Array<{ id: string }>) {
+    await sendWaiverEmail(adult.id);
+  }
 }
 
 /**
- * Kicks off the waiver email. Deliberately swallows every failure: throwing
- * here would surface as a non-2xx to Stripe, which then retries the whole
- * payment webhook. waiver-reconcile sweeps up anything that did not send.
+ * Kicks off one waiver email. Deliberately swallows every failure: throwing here
+ * would surface as a non-2xx to Stripe, which then retries the whole payment
+ * webhook. waiver-reconcile sweeps up anything that did not send.
  */
-async function sendWaiverEmail(purchaseId: string) {
+async function sendWaiverEmail(attendeeId: string) {
   const internalToken = Deno.env.get('INTERNAL_FUNCTION_TOKEN');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
@@ -225,12 +279,12 @@ async function sendWaiverEmail(purchaseId: string) {
         'Content-Type': 'application/json',
         'x-internal-token': internalToken,
       },
-      body: JSON.stringify({ purchaseId }),
+      body: JSON.stringify({ attendeeId }),
     });
 
     if (!res.ok) {
       console.error(
-        `[stripe-webhook] send-waiver-email returned HTTP ${res.status}: ${await res.text()}`,
+        `[stripe-webhook] send-waiver-email for attendee ${attendeeId} returned HTTP ${res.status}: ${await res.text()}`,
       );
     }
   } catch (error) {

@@ -53,6 +53,7 @@ interface AttendeeRow {
   purchase_id: string;
   name: string;
   email: string;
+  is_buyer: boolean;
   waiver_email_sent_at: string | null;
   waiver_status: string;
 }
@@ -313,7 +314,7 @@ Deno.serve(async (req) => {
     // Resolve the attendee. A purchaseId means "the buyer on that purchase".
     let attendee: AttendeeRow | null = null;
     const attendeeColumns =
-      "id, purchase_id, name, email, waiver_email_sent_at, waiver_status";
+      "id, purchase_id, name, email, is_buyer, waiver_email_sent_at, waiver_status";
 
     if (attendeeId) {
       const { data, error } = await supabase
@@ -361,8 +362,12 @@ Deno.serve(async (req) => {
     }
     const purchase = purchaseData as PurchaseRow;
 
-    const externalId = toExternalId(purchase.id);
-    const name = attendee.name || purchase.buyer_name || "";
+    // The external_id identifies the ATTENDEE, not the purchase. With several
+    // adults on one purchase a purchase-scoped id would make every signature
+    // resolve to the buyer, so signatures 2..N would overwrite the buyer's row
+    // instead of marking their own.
+    const externalId = toExternalId(attendee.id);
+    const name = attendee.name || (attendee.is_buyer ? purchase.buyer_name : "") || "";
 
     let waiverUrl = smartwaiverKey
       ? await createPrefillUrl(templateId, smartwaiverKey, name, attendee.email, externalId)
@@ -373,7 +378,7 @@ Deno.serve(async (req) => {
       waiverUrl =
         `https://waiver.smartwaiver.com/w/${templateId}/web/?auto_tag=${externalId}`;
       console.error(
-        `[send-waiver-email] falling back to plain template URL for purchase ${purchase.id}`,
+        `[send-waiver-email] falling back to plain template URL for attendee ${attendee.id}`,
       );
     }
 

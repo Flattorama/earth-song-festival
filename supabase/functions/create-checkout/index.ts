@@ -7,9 +7,11 @@
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
 import {
+  buildAdultMetadata,
   buildYouthBandsMetadata,
   isEarlyBirdExpired,
   TICKETS,
+  validateAdults,
   validateYouthCounts,
 } from "./catalog.ts";
 
@@ -39,6 +41,8 @@ Deno.serve(async (req) => {
       customerName,
       referralCode,
       youthCounts,
+      adultQuantity,
+      additionalAdults,
     } = await req.json();
 
     const ticket = TICKETS[ticketType];
@@ -58,6 +62,12 @@ Deno.serve(async (req) => {
     }
 
     const validatedYouth = validateYouthCounts(ticketType, youthCounts);
+    const validatedAdults = validateAdults(
+      adultQuantity,
+      additionalAdults,
+      customerEmailTrimmed,
+    );
+    const adultTicketCount = validatedAdults.length + 1; // the buyer
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -67,7 +77,7 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey);
     const origin = req.headers.get("origin") || "https://earthsongfestival.com";
     const youthTicketCount = validatedYouth.reduce((sum, line) => sum + line.count, 0);
-    const totalTicketCount = 1 + youthTicketCount;
+    const totalTicketCount = adultTicketCount + youthTicketCount;
 
     const lineItems = [
       {
@@ -79,7 +89,7 @@ Deno.serve(async (req) => {
           },
           unit_amount: ticket.amount,
         },
-        quantity: 1,
+        quantity: adultTicketCount,
       },
       // Free bands (under 2) are counted in the metadata but never sent to
       // Stripe -- a zero-amount line item would be rejected.
@@ -120,13 +130,16 @@ Deno.serve(async (req) => {
       metadata: {
         ticket_type: ticketType,
         adult_ticket_type: ticketType,
-        adult_ticket_count: "1",
+        adult_ticket_count: String(adultTicketCount),
         youth_ticket_count: String(youthTicketCount),
         total_ticket_count: String(totalTicketCount),
         youth_bands: buildYouthBandsMetadata(validatedYouth),
         attendee_name: customerNameTrimmed,
         attendee_email: customerEmailTrimmed,
         referral_code: referralCode || "none",
+        // One key pair per additional adult. stripe-webhook turns these into
+        // attendee rows so each person gets their own waiver link.
+        ...buildAdultMetadata(validatedAdults),
       },
     };
 

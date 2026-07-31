@@ -50,6 +50,7 @@ interface PendingAttendee {
   id: string;
   name: string;
   email: string;
+  is_buyer: boolean;
   purchase_id: string;
   smartwaiver_url: string | null;
   waiver_email_sent_at: string | null;
@@ -232,7 +233,7 @@ Deno.serve(async (req) => {
     const { data: pendingRows, error: pendingError } = await supabase
       .from("attendees")
       .select(
-        "id, name, email, purchase_id, smartwaiver_url, waiver_email_sent_at, waiver_reminder_count, waiver_last_reminder_at, purchases(id, created_at)",
+        "id, name, email, is_buyer, purchase_id, smartwaiver_url, waiver_email_sent_at, waiver_reminder_count, waiver_last_reminder_at, purchases(id, created_at)",
       )
       .eq("waiver_status", "pending")
       .eq("is_minor", false)
@@ -260,7 +261,11 @@ Deno.serve(async (req) => {
         const res = await fetch(`${supabaseUrl}/functions/v1/send-waiver-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-internal-token": internalToken },
-          body: JSON.stringify({ purchaseId: attendee.purchase_id }),
+          // Addressed by attendee, not purchase: a purchase id resolves to the
+          // buyer, who has already been emailed, so send-waiver-email would
+          // answer { skipped: true } and the other adults would never hear from
+          // us at all.
+          body: JSON.stringify({ attendeeId: attendee.id }),
         });
         if (res.ok) {
           summary.initialEmailsSent++;
@@ -287,20 +292,37 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const externalId = toExternalId(attendee.purchase_id);
+        // Links now carry the attendee id. Older ones carry the purchase id, so
+        // check both before concluding someone has not signed.
+        const externalId = toExternalId(attendee.id);
+        const legacyExternalId = toExternalId(attendee.purchase_id);
         try {
-          const res = await fetch(
-            `https://api.smartwaiver.com/v4/waivers?external_id=${externalId}&limit=5`,
-            { headers: { Authorization: `Bearer ${smartwaiverKey}` } },
-          );
+          const lookup = async (id: string) =>
+            await fetch(
+              `https://api.smartwaiver.com/v4/waivers?external_id=${id}&limit=5`,
+              { headers: { Authorization: `Bearer ${smartwaiverKey}` } },
+            );
+
+          let res = await lookup(externalId);
           summary.smartwaiverChecked++;
 
           if (!res.ok) {
             summary.errors.push(`smartwaiver lookup HTTP ${res.status} for ${externalId}`);
             stillPending.push(attendee);
           } else {
-            const payload = await res.json();
-            const waivers = Array.isArray(payload?.waivers) ? payload.waivers : [];
+            let payload = await res.json();
+            let waivers = Array.isArray(payload?.waivers) ? payload.waivers : [];
+
+            // Only the buyer could ever have signed under a purchase-scoped id.
+            if (waivers.length === 0 && attendee.is_buyer) {
+              await sleep(SMARTWAIVER_DELAY_MS);
+              res = await lookup(legacyExternalId);
+              summary.smartwaiverChecked++;
+              if (res.ok) {
+                payload = await res.json();
+                waivers = Array.isArray(payload?.waivers) ? payload.waivers : [];
+              }
+            }
 
             if (waivers.length > 0) {
               const waiver = waivers[0];

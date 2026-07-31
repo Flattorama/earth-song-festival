@@ -14,10 +14,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   forcedYouthPassType,
+  MAX_ADULTS_PER_PURCHASE,
   MAX_YOUTH_PER_BAND,
   YOUTH_AGE_BANDS,
   youthPricing,
   youthSubtotal,
+  type AdditionalAdult,
   type YouthAgeBand,
   type YouthCounts,
   type YouthPassType,
@@ -43,6 +45,8 @@ const TicketPicker = ({
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<ReferralStatus>("idle");
   const [referralFacilitator, setReferralFacilitator] = useState("");
+  const [adultQuantity, setAdultQuantity] = useState(1);
+  const [additionalAdults, setAdditionalAdults] = useState<AdditionalAdult[]>([]);
   const [bringingMinors, setBringingMinors] = useState(false);
   const [counts, setCounts] = useState<Record<YouthAgeBand, number>>({
     "13-18": 0,
@@ -62,7 +66,66 @@ const TicketPicker = ({
     (sum, band) => sum + counts[band],
     0,
   );
-  const canSubmit = name.trim() !== "" && email.trim() !== "" && !loading;
+
+  /**
+   * Grows and shrinks the additional-adult rows with the quantity. Shrinking
+   * drops the trailing rows rather than keeping them hidden, so a party reduced
+   * from 4 to 2 cannot submit details for people who are no longer coming.
+   */
+  const adjustAdultQuantity = (delta: number) => {
+    setAdultQuantity((prev) => {
+      const next = Math.min(Math.max(prev + delta, 1), MAX_ADULTS_PER_PURCHASE);
+      setAdditionalAdults((rows) => {
+        const wanted = next - 1;
+        if (rows.length === wanted) return rows;
+        if (rows.length > wanted) return rows.slice(0, wanted);
+        return [
+          ...rows,
+          ...Array.from({ length: wanted - rows.length }, () => ({ name: "", email: "" })),
+        ];
+      });
+      return next;
+    });
+  };
+
+  const updateAdult = (index: number, field: keyof AdditionalAdult, value: string) => {
+    setAdditionalAdults((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+    );
+  };
+
+  // Deliberately permissive: catching typos, not policing RFC 5322. Mirrors the
+  // check in create-checkout/catalog.ts.
+  const emailLooksValid = (value: string) => /^[^\s@]+@[^\s@.]+\.[^\s@]+$/.test(value.trim());
+
+  /**
+   * `attendees` carries UNIQUE (purchase_id, email), so two adults sharing an
+   * address would collapse into one row -- we would sell three tickets and track
+   * two people. Caught here and again server-side.
+   */
+  const duplicateEmail = (() => {
+    const seen = new Set<string>();
+    const buyer = email.trim().toLowerCase();
+    if (buyer) seen.add(buyer);
+    for (const adult of additionalAdults) {
+      const key = adult.email.trim().toLowerCase();
+      if (!key) continue;
+      if (seen.has(key)) return adult.email.trim();
+      seen.add(key);
+    }
+    return null;
+  })();
+
+  const adultsComplete = additionalAdults.every(
+    (adult) => adult.name.trim() !== "" && emailLooksValid(adult.email),
+  );
+
+  const canSubmit =
+    name.trim() !== "" &&
+    email.trim() !== "" &&
+    adultsComplete &&
+    !duplicateEmail &&
+    !loading;
 
   // Steps from the previous count rather than the rendered one: two quick taps
   // land in the same React batch, and computing from a captured value would
@@ -114,6 +177,8 @@ const TicketPicker = ({
     setReferralCode("");
     setReferralStatus("idle");
     setReferralFacilitator("");
+    setAdultQuantity(1);
+    setAdditionalAdults([]);
     setBringingMinors(false);
     setCounts({ "13-18": 0, "8-12": 0, "2-7": 0, "under-2": 0 });
   };
@@ -153,6 +218,11 @@ const TicketPicker = ({
                 ? referralCode.trim().toUpperCase()
                 : undefined,
             youthCounts,
+            adultQuantity,
+            additionalAdults: additionalAdults.map((adult) => ({
+              name: adult.name.trim(),
+              email: adult.email.trim(),
+            })),
           },
         },
       );
@@ -224,6 +294,90 @@ const TicketPicker = ({
             <p className="text-xs text-muted-foreground">
               Your waiver link goes here, so double-check it.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h4 className="font-serif text-sm font-semibold text-primary sm:text-base">
+                  How many adults?
+                </h4>
+                <p className="mt-1 text-xs text-foreground/70 sm:text-sm">
+                  Including you. Each adult signs their own waiver, so we email
+                  everyone their own link.
+                </p>
+              </div>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="One fewer adult ticket"
+                  disabled={adultQuantity <= 1}
+                  onClick={() => adjustAdultQuantity(-1)}
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span
+                  className="w-6 text-center text-sm font-semibold tabular-nums"
+                  data-testid="adult-count"
+                >
+                  {adultQuantity}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="One more adult ticket"
+                  disabled={adultQuantity >= MAX_ADULTS_PER_PURCHASE}
+                  onClick={() => adjustAdultQuantity(+1)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {additionalAdults.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-xs text-foreground/70 sm:text-sm">
+                  We need each person's own email — one waiver cannot cover
+                  another adult.
+                </p>
+                {additionalAdults.map((adult, index) => (
+                  <div
+                    key={index}
+                    className="space-y-2 rounded-lg border border-border bg-white p-3"
+                  >
+                    <p className="text-sm font-medium text-foreground">
+                      Adult {index + 2}
+                    </p>
+                    <Input
+                      aria-label={`Name of adult ${index + 2}`}
+                      data-testid={`adult-name-${index + 2}`}
+                      placeholder="Full name"
+                      value={adult.name}
+                      onChange={(e) => updateAdult(index, "name", e.target.value)}
+                    />
+                    <Input
+                      aria-label={`Email of adult ${index + 2}`}
+                      data-testid={`adult-email-${index + 2}`}
+                      type="email"
+                      placeholder="their@email.com"
+                      value={adult.email}
+                      onChange={(e) => updateAdult(index, "email", e.target.value)}
+                    />
+                  </div>
+                ))}
+                {duplicateEmail && (
+                  <p className="text-sm text-destructive" data-testid="duplicate-email-error">
+                    Each adult needs their own email address. {duplicateEmail} is
+                    used more than once.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
