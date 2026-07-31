@@ -70,9 +70,6 @@ jobs:
         run: |
           npx supabase@latest functions deploy create-checkout --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy get-purchase --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
-          npx supabase@latest functions deploy submit-attendees --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
-          npx supabase@latest functions deploy get-attendee-by-token --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
-          npx supabase@latest functions deploy sign-waiver --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy get-admin-dashboard-data --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy google-sheets-sync --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt
           npx supabase@latest functions deploy stripe-webhook --project-ref bdkaqgvzjkixwakzploq --no-verify-jwt

@@ -47,6 +47,14 @@ const faqItems = [
     answer: "Detailed directions and parking information will be sent to all ticket holders closer to the event. Still Life Retreat & Lake is located in a beautiful natural setting with ample parking available.",
   },
   {
+    question: "Do I need to sign a waiver?",
+    answer: "Yes — every adult attending signs their own. It arrives by email right after checkout and takes about two minutes. No one can sign on another adult's behalf, so if you bought tickets for friends, forward them the link. Parents and guardians sign for anyone under 18 on the same form: select both \"Adult\" and \"Minor(s)\" on the first screen, then add each child. You can read the waiver in advance at /Earth_Song_Waiver_Adult.pdf",
+  },
+  {
+    question: "I didn't get my waiver email.",
+    answer: "Check your spam folder for a message from waiver.smartwaiver.com. It can also take a minute or two to arrive. If it still hasn't turned up, email us at hello@earthsongfestival.com and we'll resend it. You can also sign at the gate, though it means a wait.",
+  },
+  {
     question: "I have more questions!",
     answer: "We're happy to help. Reach out to us at hello@earthsongfestival.com and we'll get back to you as soon as possible.",
   },
