@@ -32,6 +32,7 @@ export type Database = {
           waiver_last_reminder_at: string | null
           waiver_reminder_count: number
           waiver_signed_at: string | null
+          waiver_signed_method: string | null
           waiver_status: string
           waiver_token: string | null
         }
@@ -52,6 +53,7 @@ export type Database = {
           waiver_last_reminder_at?: string | null
           waiver_reminder_count?: number
           waiver_signed_at?: string | null
+          waiver_signed_method?: string | null
           waiver_status?: string
           waiver_token?: string | null
         }
@@ -72,6 +74,7 @@ export type Database = {
           waiver_last_reminder_at?: string | null
           waiver_reminder_count?: number
           waiver_signed_at?: string | null
+          waiver_signed_method?: string | null
           waiver_status?: string
           waiver_token?: string | null
         }

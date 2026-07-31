@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import {
+  type AttendeeWaiverState,
+  decideStatusChange,
+  isWaiverStatus,
+} from "./helpers.ts";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,12 +47,14 @@ Deno.serve(async (req) => {
     // admin token the dashboard holds is the only credential the client needs.
     let action: string | null = null;
     let actionAttendeeId: string | null = null;
+    let actionStatus: unknown = null;
     try {
       const raw = await req.text();
       if (raw.trim()) {
         const parsed = JSON.parse(raw);
         action = typeof parsed?.action === "string" ? parsed.action : null;
         actionAttendeeId = typeof parsed?.attendeeId === "string" ? parsed.attendeeId : null;
+        actionStatus = parsed?.status;
       }
     } catch {
       // No body, or not JSON. Treated as a plain dashboard read.
@@ -86,11 +96,64 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Manual status switch, for a paper waiver collected at the gate. The rules
+    // about what may change live in decideStatusChange so they are unit-tested.
+    if (action === "set-waiver-status") {
+      if (!actionAttendeeId || !UUID_RE.test(actionAttendeeId)) {
+        return new Response(JSON.stringify({ error: "attendeeId must be a UUID" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!isWaiverStatus(actionStatus)) {
+        return new Response(
+          JSON.stringify({ error: 'status must be "signed" or "pending"' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const { data: current, error: readError } = await supabase
+        .from("attendees")
+        .select("waiver_status, waiver_signed_method, smartwaiver_id")
+        .eq("id", actionAttendeeId)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!current) {
+        return new Response(JSON.stringify({ error: "No attendee found for that id" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const decision = decideStatusChange(
+        current as AttendeeWaiverState,
+        actionStatus,
+        new Date(),
+      );
+      if (!decision.allowed) {
+        return new Response(JSON.stringify({ error: decision.reason }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: updateError } = await supabase
+        .from("attendees")
+        .update(decision.updates)
+        .eq("id", actionAttendeeId);
+      if (updateError) throw updateError;
+
+      return new Response(
+        JSON.stringify({ updated: true, status: decision.updates.waiver_status }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const [attendeesRes, purchasesRes, minorWaiversRes, unmatchedRes] = await Promise.all([
       supabase
         .from("attendees")
         .select(
-          "id, name, email, phone, is_buyer, is_minor, waiver_status, waiver_signed_at, waiver_email_sent_at, waiver_reminder_count, waiver_last_reminder_at, smartwaiver_id, smartwaiver_url, checked_in_at, created_at, purchase_id"
+          "id, name, email, phone, is_buyer, is_minor, waiver_status, waiver_signed_at, waiver_signed_method, waiver_email_sent_at, waiver_reminder_count, waiver_last_reminder_at, smartwaiver_id, smartwaiver_url, checked_in_at, created_at, purchase_id"
         )
         .order("created_at", { ascending: false }),
       supabase
